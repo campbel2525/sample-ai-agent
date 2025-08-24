@@ -1,8 +1,10 @@
 import os
+import shutil
 from datetime import datetime
 from typing import Any, Dict, List
 from urllib.parse import urljoin
 
+import anthropic
 import requests
 import yaml
 
@@ -13,11 +15,10 @@ from config.prompts import (
 )
 from config.settings import Settings
 from utils.file_utils import load_yaml_data, save_json, save_yaml
-import anthropic
 
 
 def load_current_prompts(
-    execution_datetime: str, test_execution_no: int
+    execution_datetime: str, test_execution_no: str
 ) -> Dict[str, str]:
     """
     現在のプロンプトを読み込む関数
@@ -31,7 +32,7 @@ def load_current_prompts(
         raise FileNotFoundError(f"プロンプトファイルが見つかりません: {prompt_path}")
 
 
-def ensure_result_dirs(execution_datetime: str, test_execution_no: int):
+def ensure_result_dirs(execution_datetime: str, test_execution_no: str):
     """
     テスト結果用のディレクトリを作成する関数
     """
@@ -129,13 +130,6 @@ def generate_llm_judge_evaluation(api_result: Dict[str, Any]) -> Dict[str, str]:
     settings = Settings()
 
     try:
-        # # OpenAIクライアントを取得
-        # client = get_claude_client(
-        #     base_url=settings.openai_base_url,
-        #     api_key=settings.openai_api_key,
-        #     model=settings.openai_model,
-        # )
-
         client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
         # 回答評価の生成
@@ -148,11 +142,12 @@ def generate_llm_judge_evaluation(api_result: Dict[str, Any]) -> Dict[str, str]:
         {ANSWER_EVALUATION_PROMPT}
         """
 
-        answer_evaluation_result = client.messages.create(
+        response = client.messages.create(
             model=settings.anthropic_model,
             max_tokens=4000,
             messages=[{"role": "user", "content": answer_evaluation_prompt}],
         )
+        answer_evaluation_result = response.content
 
         # AIMessageオブジェクトを文字列に変換
         if hasattr(answer_evaluation_result, "content"):
@@ -172,11 +167,12 @@ def generate_llm_judge_evaluation(api_result: Dict[str, Any]) -> Dict[str, str]:
         {IMPROVEMENT_POINT_PROMPT}
         """
 
-        improvement_points_result = client.messages.create(
+        response = client.messages.create(
             model=settings.anthropic_model,
             max_tokens=4000,
             messages=[{"role": "user", "content": improvement_prompt}],
         )
+        improvement_points_result = response.content
 
         # AIMessageオブジェクトを文字列に変換
         if hasattr(improvement_points_result, "content"):
@@ -206,11 +202,7 @@ def update_prompts_with_ai(
 
     try:
         # OpenAIクライアントを取得
-        client = get_claude_client(
-            base_url=settings.openai_base_url,
-            api_key=settings.openai_api_key,
-            model=settings.openai_model,
-        )
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
         # テスト結果の要約を作成
         results_summary = ""
@@ -242,8 +234,12 @@ def update_prompts_with_ai(
 
         改善されたプロンプトをYAML形式で出力してください。
         """
-
-        updated_prompts_result = client.invoke(update_prompt)
+        response = client.messages.create(
+            model=settings.anthropic_model,
+            max_tokens=4000,
+            messages=[{"role": "user", "content": update_prompt}],
+        )
+        updated_prompts_result = response.content
 
         # AIMessageオブジェクトを文字列に変換
         if hasattr(updated_prompts_result, "content"):
@@ -296,6 +292,9 @@ def run_api_with_test_data(
     # テストデータを読み込む
     test_data = load_yaml_data("data/test_data/test_data.yml")
     test_data_list = test_data.get("test_data", [])
+
+    if len(test_data_list) == 0:
+        raise ValueError("テストデータが空です: data/test_data/test_data.yml")
 
     # 現在のプロンプトを読み込む
     current_prompts = load_current_prompts(execution_datetime, test_execution_no)
@@ -374,6 +373,16 @@ def run_tuning():
     for index in range(run_count):
         test_execution_no = index + 1
         print(f"\n=== テスト実行 {test_execution_no}/{run_count} ===")
+
+        if index != 0:
+            os.makedirs(
+                f"data/tuning_result/{execution_datetime}/実行結果/test_execution_no",
+                exist_ok=True,
+            )
+            # 1個前のプロンプトを次の実行用にコピー
+            prev_prompt_path = f"data/tuning_result/{execution_datetime}/実行結果/{test_execution_no - 1}/prompt.yml"  # noqa E501
+            next_prompt_path = f"data/tuning_result/{execution_datetime}/実行結果/{test_execution_no}/prompt.yml"  # noqa E501
+            shutil.copy2(prev_prompt_path, next_prompt_path)
 
         # テストデータに対してapiを実行し保存
         test_results = run_api_with_test_data(execution_datetime, test_execution_no)
