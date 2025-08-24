@@ -1,34 +1,51 @@
-FROM public.ecr.aws/docker/library/python:3.13-bullseye
+# =====================================================================
+# Stage 1: Sudachi 辞書を取得する dictbuilder ステージ
+# =====================================================================
+FROM gradle:jdk17 AS dictbuilder
 
-# apt-getのアップデート
-RUN apt-get update && apt-get upgrade -y
+USER root
 
-# デフォルトのディレクトリを設定
-# イメージにディレクトリがないので作成される
-WORKDIR /project
+# 必要ツールをインストール
+RUN apt-get update && apt-get install -y curl unzip && rm -rf /var/lib/apt/lists/*
 
-# project配下に.venvを作成する
-ENV PIPENV_VENV_IN_PROJECT=1
+# Sudachi 辞書のバージョン指定
+ARG SD_VER=20240716
+# 使用する辞書タイプを指定 (full / core / small)
+ARG DICT_TYPE=full
 
-# log出力をリアルタイムにする
-ENV PYTHONUNBUFFERED=1
+# SudachiDict を GitHub から HTTPS でダウンロード
+RUN curl -fsSL "https://github.com/WorksApplications/SudachiDict/releases/download/v${SD_VER}/sudachi-dictionary-${SD_VER}-${DICT_TYPE}.zip" \
+    -o /tmp/dict.zip \
+    && unzip -j /tmp/dict.zip "sudachi-dictionary-${SD_VER}/system_${DICT_TYPE}.dic" -d /tmp \
+    && mv /tmp/system_${DICT_TYPE}.dic /tmp/system.dic \
+    && rm -f /tmp/dict.zip
 
-# キャッシュを作成しない
-ENV PYTHONDONTWRITEBYTECODE=1
+# =====================================================================
+# Stage 2: OpenSearch + Sudachi プラグイン
+# =====================================================================
+FROM opensearchproject/opensearch:2.18.0
 
-# パスを通す
-ENV PYTHONPATH="/project"
+# Sudachi プラグインをインストール
+RUN /usr/share/opensearch/bin/opensearch-plugin install -b \
+    https://github.com/WorksApplications/elasticsearch-sudachi/releases/download/v3.3.0/opensearch-2.18.0-analysis-sudachi-3.3.0.zip
 
-# pipのアップデート
-RUN pip install --upgrade pip
+# Sudachi 辞書用ディレクトリを作成
+USER root
+RUN mkdir -p /usr/share/opensearch/config/sudachi
 
-# pipenvのインストール
-RUN pip install --upgrade setuptools pipenv
+# dictbuilder ステージで取得した辞書をコピー
+COPY --from=dictbuilder --chown=opensearch:opensearch \
+    /tmp/system.dic \
+    /usr/share/opensearch/config/sudachi/system.dic
 
-# # ライブラリのインストール
-# COPY Pipfile /project/
-# COPY Pipfile.lock /project/
-# RUN pipenv install --dev
+# Sudachi が core 辞書を暗黙で参照するケースもあるので full → core に複製
+RUN cp /usr/share/opensearch/config/sudachi/system.dic /usr/share/opensearch/config/sudachi/system_core.dic \
+    && chown opensearch:opensearch /usr/share/opensearch/config/sudachi/system_core.dic
 
-# # プロジェクトのファイルをコピー
-# COPY . /project/
+# セキュリティ機能を無効化（検証用）
+RUN echo "plugins.security.disabled: true" >> /usr/share/opensearch/config/opensearch.yml
+
+USER opensearch
+
+# OpenSearch ポートを公開
+EXPOSE 9200 9600

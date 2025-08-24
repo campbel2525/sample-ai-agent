@@ -218,3 +218,6 @@ docker compose -f "./docker/local/docker-compose.yml" -p chatbot-ai-agent exec -
     - https://langfuse.com/docs/observability/features/sessions?utm_source=chatgpt.com
   - 1 エージェント 1 トレース
     - https://langfuse.com/integrations/model-providers/openai-py?utm_source=chatgpt.com
+- sudachi
+  - https://github.com/WorksApplications/elasticsearch-sudachi/
+  - http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/
