@@ -216,7 +216,3 @@ docker compose -f "./docker/local/docker-compose.yml" -p chatbot-ai-agent exec -
     - https://langfuse.com/docs/observability/features/sessions?utm_source=chatgpt.com
   - 1 エージェント 1 トレース
     - https://langfuse.com/integrations/model-providers/openai-py?utm_source=chatgpt.com
-
-```
-docker compose -f "./docker/local/docker-compose.yml" -p chatbot-ai-agent exec -it tuning-ai-agent pipenv run python scripts/tuning.py
-```
