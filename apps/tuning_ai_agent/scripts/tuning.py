@@ -342,30 +342,30 @@ def run_tuning():
     print(f"チューニング開始: {execution_datetime}")
 
     # 初回プロンプトをdata/test_data/initial_prompt.ymlから読み込み、テストフォルダにinitial_prompt.ymlとしてコピー
-    source_prompt_path = "data/test_data/initial_prompt.yml"
-    initial_prompt_path = f"data/tuning_result/{execution_datetime}/initial_prompt.yml"
-    target_prompt_path = (
-        f"data/tuning_result/{execution_datetime}/実行結果/1/prompt.yml"
-    )
+    # initial_prompt_path = f"data/tuning_result/{execution_datetime}/initial_prompt.yml"
+    # target_prompt_path = (
+    #     f"data/tuning_result/{execution_datetime}/実行結果/1/prompt.yml"
+    # )
 
-    if not os.path.exists(source_prompt_path):
-        raise FileNotFoundError(
-            f"初回プロンプトのソースファイルが見つかりません: {source_prompt_path}"
-        )
+    # source_prompt_path = "data/test_data/initial_prompt.yml"
+    # if not os.path.exists(source_prompt_path):
+    #     raise FileNotFoundError(
+    #         f"初回プロンプトのソースファイルが見つかりません: {source_prompt_path}"
+    #     )
 
-    # ソースファイルを読み込み
-    data = load_yaml_data(source_prompt_path)
+    # # ソースファイルを読み込み
+    # data = load_yaml_data(source_prompt_path)
 
     # テストフォルダにinitial_prompt.ymlとしてコピー
-    os.makedirs(f"data/tuning_result/{execution_datetime}", exist_ok=True)
+    # os.makedirs(f"data/tuning_result/{execution_datetime}", exist_ok=True)
 
-    save_yaml(initial_prompt_path, data)
-    print(f"初回プロンプトを保存しました: {initial_prompt_path}")
+    # save_yaml(initial_prompt_path, data)
+    # print(f"初回プロンプトを保存しました: {initial_prompt_path}")
 
-    # 実行結果1のフォルダにコピー
-    os.makedirs(f"data/tuning_result/{execution_datetime}/実行結果/1", exist_ok=True)
-    save_yaml(target_prompt_path, data)
-    print(f"実行用プロンプトを保存しました: {target_prompt_path}")
+    # # 実行結果1のフォルダにコピー
+    # os.makedirs(f"data/tuning_result/{execution_datetime}/実行結果/1", exist_ok=True)
+    # save_yaml(target_prompt_path, data)
+    # print(f"実行用プロンプトを保存しました: {target_prompt_path}")
 
     # 実行回数分のフォルダ作成とテスト実行
     all_test_results = []
@@ -374,14 +374,22 @@ def run_tuning():
         test_execution_no = index + 1
         print(f"\n=== テスト実行 {test_execution_no}/{run_count} ===")
 
-        if index != 0:
-            os.makedirs(
-                f"data/tuning_result/{execution_datetime}/実行結果/test_execution_no",
-                exist_ok=True,
-            )
+        # 実行結果用のディレクトリを作成
+        base_dir = (
+            f"data/tuning_result/{execution_datetime}/実行結果/{test_execution_no}/"
+        )
+        os.makedirs(base_dir, exist_ok=True)
+
+        # プロンプトコピー
+        if index == 0:
+            initial_prompt_path = "data/test_data/initial_prompt.yml"
+            target_prompt_path = f"{base_dir}prompt.yml"  # noqa E501
+            shutil.copy2(initial_prompt_path, target_prompt_path)
+
+        else:
             # 1個前のプロンプトを次の実行用にコピー
             prev_prompt_path = f"data/tuning_result/{execution_datetime}/実行結果/{test_execution_no - 1}/prompt.yml"  # noqa E501
-            next_prompt_path = f"data/tuning_result/{execution_datetime}/実行結果/{test_execution_no}/prompt.yml"  # noqa E501
+            next_prompt_path = f"{base_dir}prompt.yml"  # noqa E501
             shutil.copy2(prev_prompt_path, next_prompt_path)
 
         # テストデータに対してapiを実行し保存
