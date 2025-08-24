@@ -1,8 +1,8 @@
 # 概要
 
-以下の機能を作りました
+以下のシステムを作りました
 
-- AI エージェントシステム()
+- AI エージェントシステム(apps/ai_agent)
   - chatbot を実行する AI エージェント機能
   - API 化
 - チューニング AI システム(apps/tuning_ai_agent)
