@@ -9,6 +9,10 @@
   - AI エージェントをチューニングする機能
   - まだ精度があまり良くなく調整の余地があります。
 
+## 全体の構成図
+
+![構成図](https://github.com/campbel2525/sample-ai-agent/blob/main/docs/%E6%A7%8B%E6%88%90%E5%9B%B3.png?raw=true)
+
 # chatbot 用の AI エージェントについて
 
 AI エージェントの機能になります
