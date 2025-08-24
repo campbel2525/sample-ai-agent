@@ -12,8 +12,8 @@ from config.prompts import (
     IMPROVEMENT_POINT_PROMPT,
 )
 from config.settings import Settings
-from services.openai_service import get_openai_client
 from utils.file_utils import load_yaml_data, save_json, save_yaml
+import anthropic
 
 
 def load_current_prompts(
@@ -129,12 +129,14 @@ def generate_llm_judge_evaluation(api_result: Dict[str, Any]) -> Dict[str, str]:
     settings = Settings()
 
     try:
-        # OpenAIクライアントを取得
-        client = get_openai_client(
-            base_url=settings.openai_base_url,
-            api_key=settings.openai_api_key,
-            model=settings.openai_model,
-        )
+        # # OpenAIクライアントを取得
+        # client = get_claude_client(
+        #     base_url=settings.openai_base_url,
+        #     api_key=settings.openai_api_key,
+        #     model=settings.openai_model,
+        # )
+
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
         # 回答評価の生成
         answer_evaluation_prompt = f"""
@@ -146,7 +148,11 @@ def generate_llm_judge_evaluation(api_result: Dict[str, Any]) -> Dict[str, str]:
         {ANSWER_EVALUATION_PROMPT}
         """
 
-        answer_evaluation_result = client.invoke(answer_evaluation_prompt)
+        answer_evaluation_result = client.messages.create(
+            model=settings.anthropic_model,
+            max_tokens=4000,
+            messages=[{"role": "user", "content": answer_evaluation_prompt}],
+        )
 
         # AIMessageオブジェクトを文字列に変換
         if hasattr(answer_evaluation_result, "content"):
@@ -166,7 +172,11 @@ def generate_llm_judge_evaluation(api_result: Dict[str, Any]) -> Dict[str, str]:
         {IMPROVEMENT_POINT_PROMPT}
         """
 
-        improvement_points_result = client.invoke(improvement_prompt)
+        improvement_points_result = client.messages.create(
+            model=settings.anthropic_model,
+            max_tokens=4000,
+            messages=[{"role": "user", "content": improvement_prompt}],
+        )
 
         # AIMessageオブジェクトを文字列に変換
         if hasattr(improvement_points_result, "content"):
@@ -196,7 +206,7 @@ def update_prompts_with_ai(
 
     try:
         # OpenAIクライアントを取得
-        client = get_openai_client(
+        client = get_claude_client(
             base_url=settings.openai_base_url,
             api_key=settings.openai_api_key,
             model=settings.openai_model,

@@ -10,7 +10,6 @@ class Settings(BaseSettings):
     ai_agent_api_url: str = ""  # AIエージェントのAPI URL
     # tuning_result_dir: str = "data/tuning_result/"  # チューニング結果のディレクトリ
 
-    # OpenAI
-    openai_api_key: str = ""
-    openai_base_url: str = ""
-    openai_model: str = "gpt-4o-2024-08-06"
+    # Anthropic
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-sonnet-4-20250514"
