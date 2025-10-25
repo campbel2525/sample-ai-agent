@@ -1,4 +1,4 @@
-## [For English](https://github.com/campbel2525/sample-ai-agent/blob/main/README-ENGLISH.md)
+## [English README](https://github.com/campbel2525/sample-ai-agent/blob/main/README-ENGLISH.md)
 
 # 概要
 
