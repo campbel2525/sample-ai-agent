@@ -1,0 +1,34 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+openai = "*"
+langgraph = "*"
+pydantic-settings = "*"
+langchain = "*"
+elasticsearch = "*"
+pypdf = "*"
+langchain-community = "*"
+langchain-text-splitters = "*"
+langsmith = "*"
+psycopg2 = "*"
+langfuse = "*"
+langchain-openai = "*"
+opensearch-py = "*"
+fastapi = "*"
+uvicorn = "*"
+ragas = "*"
+pillow = "*"
+
+[dev-packages]
+flake8 = "*"
+mypy = "*"
+black = "*"
+isort = "*"
+debugpy = "*"
+types-requests = "*"
+
+[requires]
+python_version = "3.13"

@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "python",
+      "type": "python",
+      "request": "attach",
+      "port": 9001,
+      "host": "localhost",
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/apps/ai_agent",
+          "remoteRoot": "/project"
+        }
+      ]
+    },
+    {
+      "name": "python",
+      "type": "python",
+      "request": "attach",
+      "port": 9002,
+      "host": "localhost",
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/apps/tuning_ai_agent",
+          "remoteRoot": "/project"
+        }
+      ]
+    }
+  ]
+}

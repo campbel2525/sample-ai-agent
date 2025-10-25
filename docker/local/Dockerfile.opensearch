@@ -1,0 +1,51 @@
+# =====================================================================
+# Stage 1: Sudachi 辞書を取得する dictbuilder ステージ
+# =====================================================================
+FROM gradle:jdk17 AS dictbuilder
+
+USER root
+
+# 必要ツールをインストール
+RUN apt-get update && apt-get install -y curl unzip && rm -rf /var/lib/apt/lists/*
+
+# Sudachi 辞書のバージョン指定
+ARG SD_VER=20240716
+# 使用する辞書タイプを指定 (full / core / small)
+ARG DICT_TYPE=full
+
+# SudachiDict を GitHub から HTTPS でダウンロード
+RUN curl -fsSL "https://github.com/WorksApplications/SudachiDict/releases/download/v${SD_VER}/sudachi-dictionary-${SD_VER}-${DICT_TYPE}.zip" \
+    -o /tmp/dict.zip \
+    && unzip -j /tmp/dict.zip "sudachi-dictionary-${SD_VER}/system_${DICT_TYPE}.dic" -d /tmp \
+    && mv /tmp/system_${DICT_TYPE}.dic /tmp/system.dic \
+    && rm -f /tmp/dict.zip
+
+# =====================================================================
+# Stage 2: OpenSearch + Sudachi プラグイン
+# =====================================================================
+FROM opensearchproject/opensearch:2.18.0
+
+# Sudachi プラグインをインストール
+RUN /usr/share/opensearch/bin/opensearch-plugin install -b \
+    https://github.com/WorksApplications/elasticsearch-sudachi/releases/download/v3.3.0/opensearch-2.18.0-analysis-sudachi-3.3.0.zip
+
+# Sudachi 辞書用ディレクトリを作成
+USER root
+RUN mkdir -p /usr/share/opensearch/config/sudachi
+
+# dictbuilder ステージで取得した辞書をコピー
+COPY --from=dictbuilder --chown=opensearch:opensearch \
+    /tmp/system.dic \
+    /usr/share/opensearch/config/sudachi/system.dic
+
+# Sudachi が core 辞書を暗黙で参照するケースもあるので full → core に複製
+RUN cp /usr/share/opensearch/config/sudachi/system.dic /usr/share/opensearch/config/sudachi/system_core.dic \
+    && chown opensearch:opensearch /usr/share/opensearch/config/sudachi/system_core.dic
+
+# セキュリティ機能を無効化（検証用）
+RUN echo "plugins.security.disabled: true" >> /usr/share/opensearch/config/opensearch.yml
+
+USER opensearch
+
+# OpenSearch ポートを公開
+EXPOSE 9200 9600
