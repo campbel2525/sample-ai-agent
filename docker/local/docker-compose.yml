@@ -19,7 +19,7 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - opensearch-data:/usr/share/opensearch/data
+      - opensearch_data:/usr/share/opensearch/data
     ports:
       - "9200:9200" # ← HTTP（セキュリティ無効なので https ではなく http）
       - "9600:9600"
@@ -242,7 +242,7 @@ services:
       - langfuse_postgres_data:/var/lib/postgresql/data
 
 volumes:
-  opensearch-data:
+  opensearch_data:
     driver: local
   database_data:
     driver: local
