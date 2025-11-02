@@ -120,7 +120,8 @@ SUBTASK_REFLECTION_USER_PROMPT = """
 
 出力上の制約：
 - advice の末尾に、次のいずれか1つを必ず付けてください：
-  「classification: ambiguous | query_refinement_needed | out_of_scope | no_evidence_in_corpus」
+  「classification: ambiguous | query_refinement_needed | out_of_scope |
+  no_evidence_in_corpus」
 - query_refinement_needed の場合のみ、advice内に「improved_query: ...」を1行で示してください。
 """
 

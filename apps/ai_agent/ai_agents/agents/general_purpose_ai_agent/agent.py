@@ -28,9 +28,9 @@ from .custom_logger import setup_logger
 from .models import (
     AgentResult,
     AgentSettings,
+    Plan,
     PromptSystemUser,
     PromptUserOnly,
-    Plan,
     ReflectionResult,
     Subtask,
     ToolResult,

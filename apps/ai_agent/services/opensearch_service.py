@@ -154,7 +154,7 @@ def hybrid_search(
     query_embedding = embedding_client.embed_query(query)
 
     # ハイブリッド検索クエリの組み立て
-    query = {
+    query_body = {
         "_source": {"exclude": ["vector"]},
         "query": {
             "hybrid": {
@@ -182,7 +182,7 @@ def hybrid_search(
     response = requests.post(
         f"{opensearch_base_url}/{opensearch_index_name}/_search?search_pipeline=hybrid-pipeline",  # noqa: E501
         verify=False,
-        json=query,
+        json=query_body,
     )
     if response.status_code != 200:
         raise Exception(response.text)

@@ -4,8 +4,8 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from ai_agents.agents.general_purpose_ai_agent.agent import Agent
 from ai_agents.agents.general_purpose_ai_agent.models import AgentResult
-from services.langfuse.tracer import LangfuseTracer
 from config.custom_logger import setup_logger
+from services.langfuse.tracer import LangfuseTracer
 
 logger = setup_logger(__file__)
 
@@ -66,9 +66,15 @@ def run_agent_with_langfuse(
                     if s is not None:
                         settings_meta = {
                             "planner_model": s.planner.model_name,
-                            "subtask_select_tool_model": s.subtask_select_tool.model_name,
-                            "subtask_reflection_model": s.subtask_reflection.model_name,
-                            "subtask_retry_answer_model": s.subtask_retry_answer.model_name,
+                            "subtask_select_tool_model": (
+                                s.subtask_select_tool.model_name
+                            ),
+                            "subtask_reflection_model": (
+                                s.subtask_reflection.model_name
+                            ),
+                            "subtask_retry_answer_model": (
+                                s.subtask_retry_answer.model_name
+                            ),
                             "final_answer_model": s.final_answer.model_name,
                         }
                 except Exception:
