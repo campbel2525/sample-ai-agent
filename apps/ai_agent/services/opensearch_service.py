@@ -120,7 +120,7 @@ def hybrid_search(
     openai_max_retries,
     opensearch_base_url: str,
     opensearch_index_name: str,
-    question: str,
+    query: str,
     k=50,
     size=20,
 ):
@@ -137,7 +137,7 @@ def hybrid_search(
         password (str): パスワード
         opensearch_base_url (str): OpenSearchのベースURL
         opensearch_index_name (str): 検索対象インデックス名
-        question (str): 検索クエリ（自然文）
+        query (str): 検索クエリ（自然文）
         k (int): ベクトル検索で取得する件数
         size (int): 最終的に返す件数
 
@@ -151,7 +151,7 @@ def hybrid_search(
         openai_embedding_model,
         openai_max_retries,
     )
-    query_embedding = embedding_client.embed_query(question)
+    query_embedding = embedding_client.embed_query(query)
 
     # ハイブリッド検索クエリの組み立て
     query = {
@@ -161,7 +161,7 @@ def hybrid_search(
                 "queries": [
                     {
                         "bool": {
-                            "must": [{"match": {"content": question}}],
+                            "must": [{"match": {"content": query}}],
                         }
                     },
                     {

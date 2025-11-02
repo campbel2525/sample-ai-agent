@@ -16,7 +16,7 @@ prompt:
     - Bとは何かについて調べる
 
   ai_agent_planner_user_prompt: |
-    {question}
+    {query}
 
   ai_agent_subtask_system_prompt: |
     あなたは汎用的なAIアシスタントのサブタスク実行を担当するエージェントです。
@@ -46,7 +46,7 @@ prompt:
     評価がOKの場合は、サブタスク回答を終了します。
 
   ai_agent_subtask_tool_selection_user_prompt: |
-    ユーザーの元の質問: {question}
+    ユーザーの元の質問: {query}
     回答のための計画: {plan}
     サブタスク: {subtask}
 
@@ -72,7 +72,7 @@ prompt:
     - 利用可能なツールで対応できない質問の場合は、その旨を説明してください
 
   ai_agent_create_last_answer_user_prompt: |
-    ユーザーの質問: {question}
+    ユーザーの質問: {query}
 
     回答のための計画と実行結果: {subtask_results}
 

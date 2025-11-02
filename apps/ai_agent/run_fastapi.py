@@ -30,7 +30,7 @@ class AIAgentRequest(BaseModel):
     """
 
     # 基本パラメータ
-    question: str = Field(
+    query: str = Field(
         ...,
         description="ユーザーの質問",
         examples=["Pythonでファイルを読み込む方法を教えてください"],
@@ -118,7 +118,7 @@ class AIAgentRequest(BaseModel):
         default=None,
         description="プランナーユーザープロンプト",
         examples=[
-            "質問: {question}\n\n上記の質問に答えるために必要なサブタスクを作成してください。"
+            "質問: {query}\n\n上記の質問に答えるために必要なサブタスクを作成してください。"
         ],  # noqa: E501
     )
     ai_agent_subtask_system_prompt: Optional[str] = Field(
@@ -160,7 +160,7 @@ class AIAgentRequest(BaseModel):
         default=None,
         description="最終回答作成ユーザープロンプト",
         examples=[
-            "質問: {question}\nサブタスク結果: {subtask_results}\n\n上記の情報を基に、質問に対する包括的で分かりやすい回答を作成してください。"  # noqa: E501
+            "質問: {query}\nサブタスク結果: {subtask_results}\n\n上記の情報を基に、質問に対する包括的で分かりやすい回答を作成してください。"  # noqa: E501
         ],  # noqa: E501
     )
 
@@ -369,7 +369,7 @@ class AIAgentResponse(BaseModel):
     AI Agentの実行レスポンスモデル
     """
 
-    question: str = Field(
+    query: str = Field(
         ...,
         description="処理した質問",
         examples=["Pythonでファイルを読み込む方法を教えてください"],
@@ -438,18 +438,18 @@ app = FastAPI(
             "content": {
                 "application/json": {
                     "example": {
-                        "question": "Pythonでファイルを読み込む方法を教えてください",
+                        "query": "Pythonでファイルを読み込む方法を教えてください",
                         "answer": "Pythonでファイルを読み込むには、主に以下の方法があります：\n\n1. **基本的な方法**：\n```python\nwith open('filename.txt', 'r', encoding='utf-8') as file:\n    content = file.read()\n```\n\n2. **行ごとに読み込む方法**：\n```python\nwith open('filename.txt', 'r', encoding='utf-8') as file:\n    for line in file:\n        print(line.strip())\n```\n\nwith文を使用することで、ファイルが自動的に閉じられ、メモリリークを防ぐことができます。",  # noqa: E501
                         "ai_agent_result": {
                             "prompt": {
                                 "planner_system_prompt": "あなたは優秀なプランナーです。ユーザーの質問を分析し、適切なサブタスクに分解してください。",  # noqa: E501
-                                "planner_user_prompt": "質問: {question}\n\n上記の質問に答えるために必要なサブタスクを作成してください。",  # noqa: E501
+                                "planner_user_prompt": "質問: {query}\n\n上記の質問に答えるために必要なサブタスクを作成してください。",  # noqa: E501
                                 "subtask_system_prompt": "あなたは与えられたサブタスクを実行する専門家です。利用可能なツールを使用してタスクを完了してください。",  # noqa: E501
                                 "subtask_tool_selection_user_prompt": "サブタスク: {subtask}\n\n上記のサブタスクを実行するために最適なツールを選択し、実行してください。",  # noqa: E501
                                 "subtask_reflection_user_prompt": "サブタスク: {subtask}\nツール実行結果: {tool_result}\n\n上記の結果がサブタスクの要求を満たしているか評価してください。",  # noqa: E501
                                 "subtask_retry_answer_user_prompt": "前回の試行が不十分でした。アドバイス: {advice}\n\n改善されたアプローチでサブタスクを再実行してください。",  # noqa: E501
                                 "create_last_answer_system_prompt": "あなたは全てのサブタスクの結果を統合し、ユーザーの質問に対する最終的な回答を作成する専門家です。",  # noqa: E501
-                                "create_last_answer_user_prompt": "質問: {question}\nサブタスク結果: {subtask_results}\n\n上記の情報を基に、質問に対する包括的で分かりやすい回答を作成してください。",  # noqa: E501
+                                "create_last_answer_user_prompt": "質問: {query}\nサブタスク結果: {subtask_results}\n\n上記の情報を基に、質問に対する包括的で分かりやすい回答を作成してください。",  # noqa: E501
                             },
                             "plan": [
                                 "Pythonファイル読み込み方法の調査",
@@ -499,7 +499,7 @@ app = FastAPI(
                         "detail": [
                             {
                                 "type": "missing",
-                                "loc": ["body", "question"],
+                                "loc": ["body", "query"],
                                 "msg": "Field required",
                                 "input": {},
                             },
@@ -508,7 +508,7 @@ app = FastAPI(
                                 "loc": ["body"],
                                 "msg": "Value error, is_run_ragas=Trueの時、ragas_referenceは必須です",  # noqa: E501
                                 "input": {
-                                    "question": "テスト質問",
+                                    "query": "テスト質問",
                                     "is_run_ragas": True,
                                     "ragas_reference": None,
                                 },
@@ -523,18 +523,18 @@ app = FastAPI(
             "content": {
                 "application/json": {
                     "example": {
-                        "question": "Pythonでファイルを読み込む方法を教えてください",
+                        "query": "Pythonでファイルを読み込む方法を教えてください",
                         "answer": "",
                         "ai_agent_result": {
                             "prompt": {
                                 "planner_system_prompt": "あなたは優秀なプランナーです。ユーザーの質問を分析し、適切なサブタスクに分解してください。",  # noqa: E501
-                                "planner_user_prompt": "質問: {question}\n\n上記の質問に答えるために必要なサブタスクを作成してください。",  # noqa: E501
+                                "planner_user_prompt": "質問: {query}\n\n上記の質問に答えるために必要なサブタスクを作成してください。",  # noqa: E501
                                 "subtask_system_prompt": "あなたは与えられたサブタスクを実行する専門家です。利用可能なツールを使用してタスクを完了してください。",  # noqa: E501
                                 "subtask_tool_selection_user_prompt": "サブタスク: {subtask}\n\n上記のサブタスクを実行するために最適なツールを選択し、実行してください。",  # noqa: E501
                                 "subtask_reflection_user_prompt": "サブタスク: {subtask}\nツール実行結果: {tool_result}\n\n上記の結果がサブタスクの要求を満たしているか評価してください。",  # noqa: E501
                                 "subtask_retry_answer_user_prompt": "前回の試行が不十分でした。アドバイス: {advice}\n\n改善されたアプローチでサブタスクを再実行してください。",  # noqa: E501
                                 "create_last_answer_system_prompt": "あなたは全てのサブタスクの結果を統合し、ユーザーの質問に対する最終的な回答を作成する専門家です。",  # noqa: E501
-                                "create_last_answer_user_prompt": "質問: {question}\nサブタスク結果: {subtask_results}\n\n上記の情報を基に、質問に対する包括的で分かりやすい回答を作成してください。",  # noqa: E501
+                                "create_last_answer_user_prompt": "質問: {query}\nサブタスク結果: {subtask_results}\n\n上記の情報を基に、質問に対する包括的で分かりやすい回答を作成してください。",  # noqa: E501
                             },
                             "plan": [],
                             "subtasks_detail": [],
@@ -679,7 +679,7 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
                 answer_similarity,  # 期待される回答との類似度
             ]
             agent_result, ragas_scores = run_ai_agent_with_rags(
-                question=request.question,
+                query=request.query,
                 chat_history=request.chat_history,
                 llm_phase_configs=llm_phase_configs,
                 ai_agent_tools=ai_agent_tools,
@@ -691,7 +691,7 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
             )
         else:
             agent_result = run_ai_agent(
-                question=request.question,
+                query=request.query,
                 chat_history=request.chat_history,
                 llm_phase_configs=llm_phase_configs,
                 ai_agent_tools=ai_agent_tools,
@@ -772,7 +772,7 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
             input=ragas_input,
         )
         return AIAgentResponse(
-            question=request.question,
+            query=request.query,
             answer=agent_result.answer,
             ai_agent_result=ai_agent_result,
             ragas_result=ragas_result,
@@ -819,7 +819,7 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
             input=error_ragas_input,
         )
         return AIAgentResponse(
-            question=request.question,
+            query=request.query,
             answer="",
             ai_agent_result=error_ai_agent_result,
             ragas_result=error_ragas_result,

@@ -133,7 +133,7 @@ Specify the following in the request body:
 
 ```json
 {
-  "question": "キアヌ・リーブスの代表作と彼の人柄について教えてください",
+  "query": "キアヌ・リーブスの代表作と彼の人柄について教えてください",
   "chat_history": [
     {
       "role": "user",
@@ -185,7 +185,7 @@ Change the prompts while running the AI agent API and tune them based on the res
 
 ## Steps
 
-1. Prepare multiple question-and-answer pairs. Save file name: `data/test_data/test_data.yml`
+1. Prepare multiple query-and-answer pairs. Save file name: `data/test_data/test_data.yml`
 2. Use `data/test_data/initial_prompt.yml` as the initial prompt
 3. Start the AI agent API.
 
@@ -243,8 +243,8 @@ docker compose -f "./docker/local/docker-compose.yml" -p chatbot-ai-agent exec -
 The AI agent aims to:
 
 - Act as a chatbot that searches OpenSearch and responds
-- Ask “follow-up questions” when the user’s question is ambiguous
-- Respond that there is “no answer” when the user’s question is not present in OpenSearch
+- Ask “follow-up querys” when the user’s query is ambiguous
+- Respond that there is “no answer” when the user’s query is not present in OpenSearch
 
 OpenSearch contains information about “Keanu Reeves”.
 
@@ -254,7 +254,7 @@ We check that it does not answer beyond the information about Keanu Reeves.
 
 ### Case 1
 
-Since the question was about “the early life of Keanu Reeves,” we confirmed it could answer in a single interaction.
+Since the query was about “the early life of Keanu Reeves,” we confirmed it could answer in a single interaction.
 
 #### Conversation with the chatbot
 
@@ -264,7 +264,7 @@ Chatbot: Keanu Reeves was born on September 2, 1964 in Lebanon and grew up in To
 
 ### Case 2
 
-Because the first question was ambiguous, the chatbot asked a follow-up question.
+Because the first query was ambiguous, the chatbot asked a follow-up query.
 
 Afterward the user provided details, but because it was not in the materials, we confirmed it responded that it could not answer.
 

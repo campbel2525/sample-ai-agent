@@ -40,7 +40,7 @@ def test1_raw_ai_agent() -> None:
         RandomTool(),
     ]
 
-    question = "ランダムな整数を1つ答えてください"
+    query = "ランダムな整数を1つ答えてください"
 
     # 純粋なエージェントを作成（Langfuseなし）
     agent = Agent(
@@ -51,10 +51,10 @@ def test1_raw_ai_agent() -> None:
         prompts=AgentPrompts(),
         max_challenge_count=3,
     )
-    result = agent.run_agent(question)
+    result = agent.run_agent(query)
 
     print(f"計画: {result.plan.subtasks}")
-    print(f"質問: {result.question}")
+    print(f"質問: {result.query}")
     print(f"回答: {result.answer}")
 
 
@@ -77,7 +77,7 @@ def test2_langfuge_ai_agent() -> None:
         RandomTool(),
     ]
 
-    question = "ランダムな整数を1つ答えてください"
+    query = "ランダムな整数を1つ答えてください"
 
     # 純粋なエージェントを作成（Langfuse一切なし）
     agent = Agent(
@@ -92,14 +92,14 @@ def test2_langfuge_ai_agent() -> None:
     # Langfuse付きで実行
     result = run_agent_with_langfuse(
         agent=agent,
-        question=question,
+        query=query,
         langfuse_public_key=settings.langfuse_public_key,
         langfuse_secret_key=settings.langfuse_secret_key,
         langfuse_host=settings.langfuse_host,
     )
 
     print(f"計画: {result.plan.subtasks}")
-    print(f"質問: {result.question}")
+    print(f"質問: {result.query}")
     print(f"回答: {result.answer}")
 
 
@@ -130,7 +130,7 @@ def test3_chatbot() -> None:
         hybrid_search_tool,
     ]
 
-    question = "キアヌリーブスについて教えてください"
+    query = "キアヌリーブスについて教えてください"
 
     # 純粋なエージェントを作成
     agent = Agent(
@@ -145,7 +145,7 @@ def test3_chatbot() -> None:
     # Langfuse付きで実行
     result = run_agent_with_langfuse(
         agent=agent,
-        question=question,
+        query=query,
         langfuse_public_key=settings.langfuse_public_key,
         langfuse_secret_key=settings.langfuse_secret_key,
         langfuse_host=settings.langfuse_host,
@@ -156,7 +156,7 @@ def test3_chatbot() -> None:
     # Langfuse付きで実行
     result = run_agent_with_langfuse(
         agent=agent,
-        question=question,
+        query=query,
         langfuse_public_key=settings.langfuse_public_key,
         langfuse_secret_key=settings.langfuse_secret_key,
         langfuse_host=settings.langfuse_host,
@@ -167,7 +167,7 @@ def test3_chatbot() -> None:
     # Langfuse付きで実行
     result = run_agent_with_langfuse(
         agent=agent,
-        question=question,
+        query=query,
         langfuse_public_key=settings.langfuse_public_key,
         langfuse_secret_key=settings.langfuse_secret_key,
         langfuse_host=settings.langfuse_host,
@@ -176,7 +176,7 @@ def test3_chatbot() -> None:
     )
 
     print(f"計画: {result.plan.subtasks}")
-    print(f"質問: {result.question}")
+    print(f"質問: {result.query}")
     print(f"回答: {result.answer}")
 
 
@@ -192,7 +192,7 @@ def test4_opensearch_hybrid() -> None:
         None: 検索結果はコンソールに出力される
     """
 
-    question = "キアヌリーブスについて教えてください"
+    query = "キアヌリーブスについて教えてください"
 
     settings = Settings()
     result = hybrid_search(
@@ -202,7 +202,7 @@ def test4_opensearch_hybrid() -> None:
         openai_max_retries=3,
         opensearch_base_url=settings.opensearch_base_url,
         opensearch_index_name=settings.opensearch_default_index_name,
-        question=question,
+        query=query,
         k=50,
         size=20,
     )

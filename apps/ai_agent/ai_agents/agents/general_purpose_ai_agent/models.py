@@ -72,7 +72,7 @@ class Subtask(BaseModel):
 
 
 class AgentResult(BaseModel):
-    question: str = Field(..., description="ユーザーの元の質問")
+    query: str = Field(..., description="ユーザーの元の質問")
     plan: Plan = Field(..., description="エージェントの計画")
     subtasks: list[Subtask] = Field(..., description="サブタスクのリスト")
     answer: str = Field(..., description="最終的な回答")

@@ -39,7 +39,7 @@ logger = setup_logger(__file__)
 
 
 class AgentSubGraphState(TypedDict):
-    question: str
+    query: str
     plan: list[str]
     subtask: str
     is_completed: bool
@@ -51,7 +51,7 @@ class AgentSubGraphState(TypedDict):
 
 
 class AgentState(TypedDict):
-    question: str
+    query: str
     chat_history: list[ChatCompletionMessageParam]
     plan: list[str]
     current_step: int
@@ -107,7 +107,7 @@ class Agent:
         # # チャット履歴をフォーマット
         # chat_history_text = self._format_chat_history(state.get("chat_history", []))
         # user_prompt = self.prompts.planner_user_prompt.format(
-        #     question=state["question"],
+        #     query=state["query"],
         #     chat_history=chat_history_text,
         # )
         # messages: list[ChatCompletionMessageParam] = [
@@ -118,7 +118,7 @@ class Agent:
         # チャット履歴は配列としてそのまま渡す場合は以下を使用
         # チャット履歴をフォーマット
         user_prompt = self.prompts.planner_user_prompt.format(
-            question=state["question"],
+            query=state["query"],
         )
         messages: list[ChatCompletionMessageParam]
         messages = state.get("chat_history", []) + [
@@ -173,7 +173,7 @@ class Agent:
         if state["challenge_count"] == 0:
             logger.debug("Creating user prompt for tool selection...")
             user_prompt = self.prompts.subtask_tool_selection_user_prompt.format(
-                question=state["question"],
+                query=state["query"],
                 plan=state["plan"],
                 subtask=state["subtask"],
             )
@@ -397,7 +397,7 @@ class Agent:
             for result in state["subtask_results"]
         ]
         user_prompt = self.prompts.create_last_answer_user_prompt.format(
-            question=state["question"],
+            query=state["query"],
             plan=state["plan"],
             subtask_results=str(subtask_results),
         )
@@ -428,7 +428,7 @@ class Agent:
 
         result = subgraph.invoke(
             {
-                "question": state["question"],
+                "query": state["query"],
                 "plan": state["plan"],
                 "subtask": state["plan"][state["current_step"]],
                 "current_step": state["current_step"],
@@ -453,7 +453,7 @@ class Agent:
             Send(
                 "execute_subtasks",
                 {
-                    "question": state["question"],
+                    "query": state["query"],
                     "plan": state["plan"],
                     "current_step": idx,
                 },
@@ -545,12 +545,12 @@ class Agent:
         return app
 
     def run_agent(
-        self, question: str, chat_history: list[ChatCompletionMessageParam] = []
+        self, query: str, chat_history: list[ChatCompletionMessageParam] = []
     ) -> AgentResult:
         """エージェントを実行する
 
         Args:
-            question (str): 入力の質問
+            query (str): 入力の質問
             chat_history (list[dict], optional): チャット履歴
 
         Returns:
@@ -560,14 +560,14 @@ class Agent:
         app = self.create_graph()
         result = app.invoke(
             {
-                "question": question,
+                "query": query,
                 "chat_history": chat_history,
                 "current_step": 0,
             }
         )
 
         agent_result = AgentResult(
-            question=question,
+            query=query,
             plan=Plan(subtasks=result["plan"]),
             subtasks=result["subtask_results"],
             answer=result["last_answer"],
@@ -602,24 +602,3 @@ class Agent:
             messages=messages,
             **rest,
         )
-
-    # def _format_chat_history(
-    #     self, chat_history: list[ChatCompletionMessageParam]
-    # ) -> str:
-    #     """チャット履歴をフォーマットする
-
-    #     Args:
-    #         chat_history (list[dict]): チャット履歴
-
-    #     Returns:
-    #         str: フォーマットされたチャット履歴
-    #     """
-    #     if len(chat_history) == 0:
-    #         return "（チャット履歴なし）"
-
-    #     formatted_history = []
-    #     for message in chat_history:
-    #         role = "ユーザー" if message["role"] == "user" else "アシスタント"
-    #         formatted_history.append(f"{role}: {message['content']}")
-
-    #     return "\n".join(formatted_history)

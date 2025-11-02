@@ -21,7 +21,7 @@ from services.openai_service import get_embedding_client, get_openai_client
 
 
 def run_ai_agent(
-    question: str,
+    query: str,
     chat_history: list[ChatCompletionMessageParam],
     llm_phase_configs: LLMPhaseConfigs,
     ai_agent_tools: Any,
@@ -39,7 +39,7 @@ def run_ai_agent(
         エージェントに渡すツール群。
     ai_agent_prompts : Any
         エージェントのプロンプト定義。
-    question : str
+    query : str
         ユーザーからの質問。
     is_run_ragas : bool, default True
         True の場合はエージェント実行後に RAGAS 評価を実施。
@@ -75,7 +75,7 @@ def run_ai_agent(
     # Langfuse経由でAIエージェントを実行
     agent_result: AgentResult = run_agent_with_langfuse(
         agent=agent,
-        question=question,
+        query=query,
         chat_history=chat_history,
         langfuse_public_key=settings.langfuse_public_key,
         langfuse_secret_key=settings.langfuse_secret_key,
@@ -88,7 +88,7 @@ def run_ai_agent(
 
 
 def run_ai_agent_with_rags(
-    question: str,
+    query: str,
     chat_history: list[ChatCompletionMessageParam],
     llm_phase_configs: LLMPhaseConfigs,
     ai_agent_tools: Any,
@@ -110,7 +110,7 @@ def run_ai_agent_with_rags(
         エージェントに渡すツール群。
     ai_agent_prompts : Any
         エージェントのプロンプト定義。
-    question : str
+    query : str
         ユーザーからの質問。
     is_run_ragas : bool, default True
         True の場合はエージェント実行後に RAGAS 評価を実施。
@@ -146,7 +146,7 @@ def run_ai_agent_with_rags(
     # Langfuse経由でAIエージェントを実行
     agent_result: AgentResult = run_agent_with_langfuse(
         agent=agent,
-        question=question,
+        query=query,
         chat_history=chat_history,
         langfuse_public_key=settings.langfuse_public_key,
         langfuse_secret_key=settings.langfuse_secret_key,
@@ -158,7 +158,7 @@ def run_ai_agent_with_rags(
     # RAGAS評価の実行
     ragas_data = [
         {
-            "user_input": question,  # ユーザー入力
+            "user_input": query,  # ユーザー入力
             # "retrieved_contexts": ragas_retrieved_contexts,
             "response": agent_result.answer,
             "reference": ragas_reference,  # 正しい回答

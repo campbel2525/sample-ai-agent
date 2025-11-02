@@ -44,7 +44,7 @@ def ensure_result_dirs(execution_datetime: str, test_execution_no: str):
 
 
 def call_ai_agent_api(
-    question: str,
+    query: str,
     ragas_reference: str,
     current_prompts: Dict[str, str],
 ) -> Dict[str, Any]:
@@ -55,7 +55,7 @@ def call_ai_agent_api(
 
     # APIリクエストのペイロード
     payload = {
-        "question": question,
+        "query": query,
         "ai_agent_planner_system_prompt": current_prompts.get(
             "ai_agent_planner_system_prompt", ""
         ),
@@ -87,7 +87,7 @@ def call_ai_agent_api(
     api_url = urljoin(settings.ai_agent_api_url, "ai_agents/chatbot/exec")
     try:
         print(f"AIエージェントAPIを呼び出し中: {api_url}")
-        print(f"質問: {question}")
+        print(f"質問: {query}")
 
         # AIエージェントAPIを呼び出し
         response = requests.post(
@@ -106,7 +106,7 @@ def call_ai_agent_api(
         print(f"API呼び出しエラー: {str(e)}")
         # エラーの場合はダミーデータを返す
         return {
-            "question": question,
+            "query": query,
             "answer": f"エラーが発生しました: {str(e)}",
             "plan": [],
             "subtasks_detail": [],
@@ -136,7 +136,7 @@ def generate_llm_judge_evaluation(api_result: Dict[str, Any]) -> Dict[str, str]:
         answer_evaluation_prompt = f"""
         以下のAIエージェントの回答について考察してください：
 
-        質問: {api_result.get('question', '')}
+        質問: {api_result.get('query', '')}
         回答: {api_result.get('answer', '')}
 
         {ANSWER_EVALUATION_PROMPT}
@@ -159,7 +159,7 @@ def generate_llm_judge_evaluation(api_result: Dict[str, Any]) -> Dict[str, str]:
         improvement_prompt = f"""
         以下のAIエージェントの実行結果について改善点を考察してください：
 
-        質問: {api_result.get('question', '')}
+        質問: {api_result.get('query', '')}
         回答: {api_result.get('answer', '')}
         実行時間: {api_result.get('execution_time', 0)}秒
         完了したサブタスク: {api_result.get('completed_subtasks', 0)}/{api_result.get('total_subtasks', 0)}
@@ -212,7 +212,7 @@ def update_prompts_with_ai(
 
             results_summary += f"""
             テスト{i}:
-            質問: {api_result.get('question', '')}
+            質問: {api_result.get('query', '')}
             回答: {api_result.get('answer', '')}
             実行時間: {api_result.get('execution_time', 0)}秒
             評価: {llm_judge.get('answer_evaluation', '')}
@@ -311,7 +311,7 @@ def run_api_with_test_data(
 
         # APIを実行
         api_result = call_ai_agent_api(
-            question=test_data.get("question", ""),
+            query=test_data.get("query", ""),
             ragas_reference=test_data.get("reference", ""),
             current_prompts=current_prompts,
         )

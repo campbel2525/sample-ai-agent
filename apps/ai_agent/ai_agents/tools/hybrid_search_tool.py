@@ -17,7 +17,7 @@ class HybridSearchInput(BaseModel):
     ハイブリッド検索の実行時パラメータ。
     """
 
-    question: str = Field(..., description="検索クエリ（自然文）")
+    query: str = Field(..., description="検索クエリ（自然文）")
     k: int = Field(50, ge=1, le=1000, description="ベクトル検索で取得する候補件数")
     size: int = Field(20, ge=1, le=1000, description="最終的に返す件数")
 
@@ -34,7 +34,7 @@ class HybridSearchTool(BaseTool):
     name: str = "hybrid_search_tool"
     description: str = (
         "OpenSearchでハイブリッド検索を実行し、_source の配列のみ返します。"
-        "コンストラクタでOpenAIとOpenSearchの設定を受け取り、実行時はquestion/k/sizeを指定します。"
+        "コンストラクタでOpenAIとOpenSearchの設定を受け取り、実行時はquery/k/sizeを指定します。"
     )
     args_schema: Type[BaseModel] = HybridSearchInput
 
@@ -78,7 +78,7 @@ class HybridSearchTool(BaseTool):
 
     def _run(
         self,
-        question: str,
+        query: str,
         k: int = 50,
         size: int = 20,
     ) -> Union[List[Dict[str, Any]], Dict[str, str]]:
@@ -87,7 +87,7 @@ class HybridSearchTool(BaseTool):
         """
         logger.info(
             f"HybridSearchTool start | index={self.opensearch_index_name} "
-            f"k={k} size={size} q_len={len(question)}"
+            f"k={k} size={size} q_len={len(query)}"
         )
         try:
             result = hybrid_search(
@@ -97,7 +97,7 @@ class HybridSearchTool(BaseTool):
                 openai_max_retries=self.openai_max_retries,
                 opensearch_base_url=self.opensearch_base_url,
                 opensearch_index_name=self.opensearch_index_name,
-                question=question,
+                query=query,
                 k=k,
                 size=size,
             )

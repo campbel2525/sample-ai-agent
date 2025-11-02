@@ -42,7 +42,7 @@ PLANNER_SYSTEM_PROMPT = """
 """
 
 PLANNER_USER_PROMPT = """
-{question}
+{query}
 """
 
 # 過去の履歴を文字列にしてプロンプトに含める場合は以下を使用
@@ -51,7 +51,7 @@ PLANNER_USER_PROMPT = """
 # {chat_history}
 
 # # 現在の質問
-# {question}
+# {query}
 # """
 
 SUBTASK_SYSTEM_PROMPT = """
@@ -95,7 +95,7 @@ SUBTASK_SYSTEM_PROMPT = """
 """
 
 SUBTASK_TOOL_EXECUTION_USER_PROMPT = """
-ユーザーの元の質問: {question}
+ユーザーの元の質問: {query}
 回答のための計画: {plan}
 サブタスク: {subtask}
 
@@ -148,7 +148,7 @@ CREATE_LAST_ANSWER_SYSTEM_PROMPT = """
 """
 
 CREATE_LAST_ANSWER_USER_PROMPT = """
-ユーザーの質問: {question}
+ユーザーの質問: {query}
 
 回答のための計画と実行結果: {subtask_results}
 

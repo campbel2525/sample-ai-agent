@@ -20,7 +20,7 @@ final_prompts:
     - 利用可能なツールで対応できない質問の場合は、その旨を説明してください
 
     '
-  ai_agent_create_last_answer_user_prompt: 'ユーザーの質問: {question}
+  ai_agent_create_last_answer_user_prompt: 'ユーザーの質問: {query}
 
 
     回答のための計画と実行結果: {subtask_results}
@@ -56,7 +56,7 @@ final_prompts:
     - Bとは何かについて調べる
 
     '
-  ai_agent_planner_user_prompt: '{question}
+  ai_agent_planner_user_prompt: '{query}
 
     '
   ai_agent_subtask_reflection_user_prompt: '3.リフレクションを開始してください
@@ -113,7 +113,7 @@ final_prompts:
     評価がOKの場合は、サブタスク回答を終了します。
 
     '
-  ai_agent_subtask_tool_selection_user_prompt: 'ユーザーの元の質問: {question}
+  ai_agent_subtask_tool_selection_user_prompt: 'ユーザーの元の質問: {query}
 
     回答のための計画: {plan}
 

@@ -90,11 +90,13 @@ def main():
                 st.session_state.last_response = data
                 answer = data.get("answer") or ""
                 # 会話にassistantを追加
-                st.session_state.messages.append({"role": "assistant", "content": answer})
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": answer}
+                )
                 # ターン履歴
                 st.session_state.turns.append(
                     {
-                        "user": pending_payload.get("question", ""),
+                        "user": pending_payload.get("query", ""),
                         "assistant": answer,
                         "detail": {
                             "latency_sec": round(latency, 2),
@@ -103,7 +105,9 @@ def main():
                             "subtasks": (data.get("ai_agent_result") or {}).get(
                                 "subtasks_detail"
                             ),
-                            "ragas_scores": (data.get("ragas_result") or {}).get("scores")
+                            "ragas_scores": (data.get("ragas_result") or {}).get(
+                                "scores"
+                            )
                             or {},
                             "langfuse_session_id": data.get("langfuse_session_id"),
                         },
@@ -112,12 +116,18 @@ def main():
             else:
                 st.error(f"APIエラー: {resp.status_code} {resp.text}")
                 st.session_state.messages.append(
-                    {"role": "assistant", "content": "すみません、エラーが発生しました。"}
+                    {
+                        "role": "assistant",
+                        "content": "すみません、エラーが発生しました。",
+                    }
                 )
         except Exception as e:
             st.error(f"通信エラー: {e}")
             st.session_state.messages.append(
-                {"role": "assistant", "content": "すみません、通信エラーが発生しました。"}
+                {
+                    "role": "assistant",
+                    "content": "すみません、通信エラーが発生しました。",
+                }
             )
 
     # 入力欄の固定は描画崩れのため一旦オフ（最下部に通常表示）
@@ -319,7 +329,7 @@ def main():
         chat_history = to_chat_history(st.session_state.messages[:-1])
 
         payload: Dict[str, Any] = {
-            "question": user_input,
+            "query": user_input,
             "chat_history": chat_history,
             "planner_model_name": nvl(planner_model_name),
             "subtask_tool_selection_model_name": nvl(subtask_tool_selection_model_name),

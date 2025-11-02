@@ -12,7 +12,7 @@ logger = setup_logger(__file__)
 
 def run_agent_with_langfuse(
     agent: Agent,
-    question: str,
+    query: str,
     langfuse_public_key: str,
     langfuse_secret_key: str,
     langfuse_host: str,
@@ -25,7 +25,7 @@ def run_agent_with_langfuse(
     エージェントをLangfuseトレーシング付きで実行する
     Args:
         agent (Agent): 純粋なエージェントインスタンス
-        question (str): 入力の質問
+        query (str): 入力の質問
         langfuse_public_key (str): LangfuseのPublic Key
         langfuse_secret_key (str): LangfuseのSecret Key
         langfuse_host (str): LangfuseのHost URL
@@ -61,7 +61,7 @@ def run_agent_with_langfuse(
             try:
                 span.update_trace(
                     name=langfuse_trace_name,  # ★ 引数を使用
-                    input={"question": question, "chat_history": chat_history},
+                    input={"query": query, "chat_history": chat_history},
                     metadata={
                         "agent_type": "general_purpose_ai_agent",
                         "max_challenge_count": agent.max_challenge_count,
@@ -79,7 +79,7 @@ def run_agent_with_langfuse(
                 logger.info(
                     f"🚀 Starting agent execution with Langfuse tracing ({langfuse_trace_name})..."  # noqa: E501
                 )
-                agent_result = agent.run_agent(question, chat_history)
+                agent_result = agent.run_agent(query, chat_history)
 
                 try:
                     plan = getattr(agent_result, "plan", None)
@@ -119,7 +119,7 @@ def run_agent_with_langfuse(
 
     try:
         logger.info("🚀 Starting agent execution without Langfuse tracing...")
-        agent_result = agent.run_agent(question, chat_history)
+        agent_result = agent.run_agent(query, chat_history)
         logger.info("✅ Agent execution completed successfully")
         return agent_result
     finally:
