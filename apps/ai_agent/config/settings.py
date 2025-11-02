@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-2024-08-06"
     openai_embedding_model: str = "text-embedding-3-large"
+    openai_max_retries: int = 3
 
     # Langfuse settings (optional)
     langfuse_public_key: str = "public-key"

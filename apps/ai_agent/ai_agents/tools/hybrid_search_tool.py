@@ -90,7 +90,7 @@ class HybridSearchTool(BaseTool):
             f"k={k} size={size} q_len={len(question)}"
         )
         try:
-            raw = hybrid_search(
+            result = hybrid_search(
                 openai_api_key=self.openai_api_key,
                 openai_base_url=self.openai_base_url,
                 openai_embedding_model=self.openai_embedding_model,
@@ -101,9 +101,9 @@ class HybridSearchTool(BaseTool):
                 k=k,
                 size=size,
             )
-            hits_count = len(((raw.get("hits") or {}).get("hits") or []))
+            hits_count = len(((result.get("hits") or {}).get("hits") or []))
             logger.info(f"HybridSearchTool success | raw_hits={hits_count}")
-            return self._extract_sources(raw, size=size)
+            return self._extract_sources(result, size=size)
         except Exception as e:
             msg = f"ハイブリッド検索エラー: {str(e)}"
             logger.error(msg)
