@@ -135,9 +135,9 @@ class AgentSettings(BaseModel):
         subtask_reflection_user_prompt: str | None = None,
         subtask_reflection_model_name: str | None = None,
         # subtask_retry_answer
+        subtask_retry_answer_model_name: str | None = None,
         subtask_retry_answer_model_params: Mapping[str, Any] | None = None,
         subtask_retry_answer_user_prompt: str | None = None,
-        subtask_retry_answer_model_name: str | None = None,
         # final_answer
         final_answer_model_name: str | None = None,
         final_answer_model_params: Mapping[str, Any] | None = None,

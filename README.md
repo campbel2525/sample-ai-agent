@@ -138,37 +138,54 @@ AI エージェント API のテストの方法
 
 ```json
 {
-  "query": "キアヌ・リーブスの代表作と彼の人柄について教えてください",
+  "query": "Pythonでファイルを読み込む方法を教えてください",
   "chat_history": [
     {
+      "content": "Pythonについて教えて",
       "role": "user",
-      "content": "映画マトリックスの主人公は？"
+      "timestamp": "2025-01-17T10:00:00Z"
     },
     {
+      "content": "Pythonは汎用プログラミング言語です。",
       "role": "assistant",
-      "content": "キアヌリーブスです"
+      "timestamp": "2025-01-17T10:00:30Z"
     }
   ],
   "planner_model_name": "gpt-4o-2024-08-06",
+  "planner_model_params": {
+    "seed": 0,
+    "temperature": 0
+  },
   "subtask_tool_selection_model_name": "gpt-4o-2024-08-06",
-  "subtask_answer_model_name": "gpt-4o-2024-08-06",
-  "subtask_reflection_model_name": "gpt-4o-2024-08-06",
+  "subtask_tool_selection_model_params": {
+    "seed": 0,
+    "temperature": 0
+  },
+  "subtask_retry_answer_model_params": {
+    "seed": 0,
+    "temperature": 0
+  },
   "final_answer_model_name": "gpt-4o-2024-08-06",
-  "planner_params": null,
-  "subtask_tool_selection_model_params": null,
-  "subtask_answer_model_params": null,
-  "subtask_reflection_model_params": null,
-  "final_answer_model_params": null,
-  "ai_agent_planner_system_prompt": null,
-  "ai_agent_planner_user_prompt": null,
-  "ai_agent_subtask_select_tool_system_prompt": null,
-  "ai_agent_subtask_select_tool_user_prompt": null,
-  "ai_agent_subtask_reflection_user_prompt": null,
-  "ai_agent_subtask_retry_answer_user_prompt": null,
-  "ai_agent_final_answer_system_prompt": null,
-  "ai_agent_final_answer_user_prompt": null,
+  "subtask_reflection_model_params": {
+    "seed": 0,
+    "temperature": 0
+  },
+  "final_answer_model_params": {
+    "seed": 0,
+    "temperature": 0
+  },
+  "planner_system_prompt": "あなたは優秀なプランナーです。ユーザーの質問を分析し、適切なサブタスクに分解してください。",
+  "planner_user_prompt": "質問: {query}\n\n上記の質問に答えるために必要なサブタスクを作成してください。",
+  "subtask_tool_selection_system_prompt": "あなたは与えられたサブタスクを実行する専門家です。利用可能なツールを使用してタスクを完了してください。",
+  "subtask_tool_selection_user_prompt": "サブタスク: {subtask}\n\n上記のサブタスクを実行するために最適なツールを選択し、実行してください。",
+  "subtask_reflection_user_prompt": "サブタスク: {subtask}\nツール実行結果: {tool_result}\n\n上記の結果がサブタスクの要求を満たしているか評価してください。",
+  "subtask_reflection_model_name": "gpt-4o-2024-08-06",
+  "subtask_retry_answer_user_prompt": "前回の試行が不十分でした。アドバイス: {advice}\n\n改善されたアプローチでサブタスクを再実行してください。",
+  "subtask_retry_answer_model_name": "gpt-4o-2024-08-06",
+  "final_answer_system_prompt": "あなたは全てのサブタスクの結果を統合し、ユーザーの質問に対する最終的な回答を作成する専門家です。",
+  "final_answer_user_prompt": "質問: {query}\nサブタスク結果: {subtask_results}\n\n上記の情報を基に、質問に対する包括的で分かりやすい回答を作成してください。",
   "is_run_ragas": true,
-  "ragas_reference": "キアヌ・リーブスの代表作には『スピード』（1994年）、『マトリックス』シリーズ（1999年〜）、『ジョン・ウィック』シリーズ（2014年〜）があります。彼は「聖人」と呼ばれるほどの人格者として知られ、映画の報酬の大部分を慈善事業に寄付するなど、その優しい人柄でも有名です。特に『マトリックス』の報酬の70％をガン研究に寄付したエピソードは広く知られています。"
+  "ragas_reference": "Pythonでファイルを読み込むには、open()関数を使用し、with文と組み合わせることが推奨されます。"
 }
 ```
 
