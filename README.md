@@ -4,8 +4,11 @@
 
 以下のシステムを作りました
 
-- AI エージェントシステム(apps/ai_agent)
+- チャットボット AI エージェントシステム(apps/ai_agent)
   - chatbot を実行する AI エージェント機能
+    - 資料から検索を行い返答するチャットボット
+    - ユーザーの質問が曖昧の場合は「追い質問」を行う
+    - ユーザーの質問が資料の中にない情報の場合は「回答なし」という旨の返答を行う
   - API 化
 - チューニング AI システム(apps/tuning_ai_agent)
   - AI エージェントをチューニングする機能
@@ -238,7 +241,7 @@ docker compose -f "./docker/local/docker-compose.yml" -p chatbot-ai-agent exec -
   - https://github.com/WorksApplications/elasticsearch-sudachi/
   - http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/
 
-# 検証
+# チャットボットの検証
 
 ## 検証内容
 

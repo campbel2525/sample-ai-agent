@@ -1,81 +1,87 @@
 # Overview
 
-This repository contains the following systems:
+This repository provides the following systems:
 
 - AI Agent System (`apps/ai_agent`)
-  - Chatbot AI agent
+  - AI agent that runs a chatbot
   - Exposed as an API
 - Tuning AI System (`apps/tuning_ai_agent`)
-  - Tunes the AI agent
-  - Accuracy still needs improvement
+  - Functionality to tune the AI agent
+  - Accuracy is still limited and has room for improvement
 
 ## Architecture
 
-![architecture](https://github.com/campbel2525/sample-ai-agent/blob/main/docs/%E6%A7%8B%E6%88%90%E5%9B%B3.png?raw=true)
+<img width="2232" height="1268" alt="image" src="https://github.com/user-attachments/assets/0a42a70b-a508-4cd0-b7ee-81caf80db9f3" />
 
 # AI Agent System
 
-Provides AI agent functionality.
+This provides the AI agent functionality.
 
-The AI agent is exposed via FastAPI, so you can execute it by calling the API.
+The AI agent is exposed via FastAPI, so you can run it by calling the API.
 
-You can specify the prompts to be used in the request body, enabling prompt tuning for the AI agent.
+You can specify the prompt to execute in the request body, enabling prompt tuning of the AI agent.
 
-Tune the prompts while calling the API repeatedly.
+Tune the prompts while calling the API.
 
 ## Main Features
 
-- Core feature: Chatbot AI agent
-  - Single agent
-  - Plan-and-Execute pattern
+- Core feature: Chatbot AI agent API
+  - Single-agent
+  - Plan-and-Execute type
 - Program directory: `apps/ai_agent`
 - Exposed as a FastAPI API
   - See FastAPI Docs for detailed API specifications: http://localhost:8000/docs
-  - Request body includes:
-    - Prompts required to run the AI agent
-    - Information needed to run RAGas
-  - Response includes:
-    - Information required for tuning
+  - Request body
+    - Prompt(s) required to run the AI agent
+    - Information required to run RAGas
+  - Response
+    - Full set of information needed for tuning
     - Final output of the AI agent
-    - Execution trace of the AI agent
+    - Execution record of the AI agent
     - Langfuse IDs, etc.
     - RAGas results
-  - For simplicity, API code is consolidated into a single file (`apps/ai_agent/run_fastapi.py`) without authentication.
-- Uses Langfuse, so you can review agent execution logs in the browser
+  - For this project the API is treated as a sub-feature, so it is consolidated into a single file (`apps/ai_agent/run_fastapi.py`) without authentication.
+- streamlit-ui
+  - UI feature that uses the AI agent API
+- Uses Langfuse, allowing you to view AI agent execution logs in the browser
   - https://langfuse.com/
   - Only `answer_relevancy` and `answer_similarity` are returned
-- Uses OpenSearch for hybrid search (full-text + vector search)
-  - Sample data: [Wikipedia: Keanu Reeves](https://ja.wikipedia.org/wiki/%E3%82%AD%E3%82%A2%E3%83%8C%E3%83%BB%E3%83%AA%E3%83%BC%E3%83%96%E3%82%B9)
-  - Since the goal is to verify the agent, text is chunked into 512 characters with 128-character overlap
-  - Sample file: `project/data/test_data.txt`
+- Uses OpenSearch as the search DB to perform hybrid search (full-text + vector search)
+  - Uses [Wikipedia: Keanu Reeves](https://ja.wikipedia.org/wiki/%E3%82%AD%E3%82%A2%E3%83%8C%E3%83%BB%E3%83%AA%E3%83%BC%E3%83%96%E3%82%B9) as sample data
+  - Since the goal here is to check how the AI agent behaves, we insert chunks of 512 characters with 128-character overlap without particular tuning
+  - File: `project/data/test_data.txt`
 
-## Notes
+## Other
 
-Reference (highly recommended book):
+The following technical book was used as a reference (highly recommended):
 
 - [現場で活用するための AI エージェント実践入門](https://www.amazon.co.jp/%E7%8F%BE%E5%A0%B4%E3%81%A7%E6%B4%BB%E7%94%A8%E3%81%99%E3%82%8B%E3%81%9F%E3%82%81%E3%81%AEAI%E3%82%A8%E3%83%BC%E3%82%B8%E3%82%A7%E3%83%B3%E3%83%88%E5%AE%9F%E8%B7%B5%E5%85%A5%E9%96%80-KS%E6%83%85%E5%A0%B1%E7%A7%91%E5%AD%A6%E5%B0%82%E9%96%80%E6%9B%B8-%E5%A4%AA%E7%94%B0-%E7%9C%9F%E4%BA%BA/dp/4065401402)
 
 # Tuning AI System
 
-This system continuously refines the agent prompts using AI.
+This provides functionality for AI to continuously refine the agent’s prompts.
 
-Because the AI agent is exposed as an API, the system can call the API, adjust prompts based on results with an LLM, and call the API again.
+Since the AI agent is exposed as an API, you can call the API, have an LLM adjust the prompts based on the results, and call the API again.
 
-Current accuracy is not ideal and needs improvement.
+Accuracy is not very good.
 
 ## Main Features
 
-- Main feature: Prompt tuning for the AI agent
+- Core feature: Prompt tuning for the AI agent
 - Program directory: `apps/tuning_ai_agent`
-- Predefine the number of iterations, call the AI agent API that many times, and tune prompts based on results
+- Predefine the number of iterations and call the AI agent API that many times to tune the prompts
 
 # Tech Stack
 
 - Python
-- OpenSearch (https://opensearch.org/)
-- LangChain (https://www.langchain.com/)
-- LangGraph (https://www.langchain.com/langgraph)
-- Langfuse (https://langfuse.com/)
+- OpenSearch
+  - https://opensearch.org/
+- LangChain
+  - https://www.langchain.com/
+- LangGraph
+  - https://www.langchain.com/langgraph
+- Langfuse
+  - https://langfuse.com/
 - Docker
 - OpenAI API
 
@@ -86,17 +92,17 @@ Current accuracy is not ideal and needs improvement.
 - Create `apps/ai_agent/.env` from `apps/ai_agent/.env.example.example`
 - Create `apps/tuning_ai_agent/.env` from `apps/tuning_ai_agent/.env.example`
 
-2. Create Docker environment
+2. Create the Docker environment
 
 ```
 make init
 ```
 
-3. Verify
+3. Verify operation
 
-Open the following in your browser and confirm the pages load:
+Open the following URLs in your browser and confirm the screens display:
 
-- FastAPI Swagger
+- FastAPI Swagger UI
   - http://localhost:8000/docs
 - Langfuse console
   - http://localhost:3000/
@@ -108,10 +114,10 @@ Open the following in your browser and confirm the pages load:
 3. Set up data in OpenSearch
 
 ```
-docker compose -f "./docker/local/docker-compose.yml" -p chatbot-ai-agent exec -it ai-agent pipenv run python scripts/setup.py
+make opensearch-setup
 ```
 
-This chunks the text in `data/insert_data/test_data.txt` into 512 characters with 128-character overlap and inserts it into an OpenSearch index.
+The content about Keanu Reeves (the text in `data/insert_data/test_data.txt`) is chunked into 512 characters with 128-character overlap and inserted into an OpenSearch index.
 
 4. Start the AI Agent API
 
@@ -119,18 +125,24 @@ This chunks the text in `data/insert_data/test_data.txt` into 512 characters wit
 make ai-agent-run
 ```
 
-Testing the AI Agent API:
+How to test the AI Agent API
 
-Open http://localhost:8000/docs and execute the `Exec Chatbot Ai Agent` endpoint. If you get a valid response, it is working.
+Open http://localhost:8000/docs and execute the `Exec Chatbot Ai Agent` API. If an appropriate response is returned, it is OK.
 
-Example request body:
+Specify the following in the request body:
 
 ```json
 {
   "question": "キアヌ・リーブスの代表作と彼の人柄について教えてください",
   "chat_history": [
-    { "role": "user", "content": "映画マトリックスの主人公は？" },
-    { "role": "assistant", "content": "キアヌリーブスです" }
+    {
+      "role": "user",
+      "content": "映画マトリックスの主人公は？"
+    },
+    {
+      "role": "assistant",
+      "content": "キアヌリーブスです"
+    }
   ],
   "planner_model_name": "gpt-4o-2024-08-06",
   "subtask_tool_selection_model_name": "gpt-4o-2024-08-06",
@@ -155,36 +167,117 @@ Example request body:
 }
 ```
 
-# How to Tune with the Tuning AI
+5. Start streamlit
 
-Accuracy still needs improvement.
+```
+make streamlit-ui-run
+```
 
-The goal is to tune prompts used by the AI agent.
+Open http://localhost:8501/ and confirm the screen displays.
 
-Change prompts and run the AI agent API repeatedly, tuning prompts based on results.
+# How to Tune Using the Tuning AI
+
+**Accuracy still needs improvement.**
+
+We envisage tuning the prompts used by the AI agent.
+
+Change the prompts while running the AI agent API and tune them based on the results.
 
 ## Steps
 
-1. Prepare multiple question/answer pairs. Save to `data/test_data/test_data.yml`.
-2. Use `data/test_data/initial_prompt.yml` as the initial prompt.
-3. Start the AI agent API:
+1. Prepare multiple question-and-answer pairs. Save file name: `data/test_data/test_data.yml`
+2. Use `data/test_data/initial_prompt.yml` as the initial prompt
+3. Start the AI agent API.
 
 ```
 make ai-agent-run
 ```
 
-4. Run tuning:
+4. Run tuning
 
 ```
 docker compose -f "./docker/local/docker-compose.yml" -p chatbot-ai-agent exec -it tuning-ai-agent pipenv run python scripts/tuning.py
 ```
 
-5. Results are output to `data/tuning_result`. See `data/tuning_result/0sample` for the folder structure.
+5. Results are output to `data/tuning_result`. For the output folder structure, see `data/tuning_result/0sample`.
 
 # Future Work / Ideas
 
-- Add functions to modify the agent’s own code
+- There is no functionality to modify the agent’s own program; we would like to introduce something.
   - Use Cline?
   - Use Claude Code?
-- Add memory to the AI agent
-  - If successful results are saved, performance can improve with usage
+- It would be good for the AI agent to have memory
+  - If successful results are saved, performance can reportedly improve the more it is used
+- It may be good to change the mechanism of the AI agent itself
+  - Although it is a chatbot assuming a conversational form, performing Deep Research over a set of prepared files might also be good
+- Consider comparing LLM models
+  - Especially for planning LLMs, would like to use GPT-5 or a reasoning mode
+- The Tuning AI has poor accuracy and should be improved
+  - We are not actually using it for prompt tuning at the moment
+    - Currently development is proceeding using Codex
+  - The prompts executed by the Tuning AI are not good
+    - The prompt does not include information about what kind of AI agent it is
+    - It would be good to make this injectable from outside
+  - Create a test folder and pass it as an argument when running the command?
+
+# References
+
+- [現場で活用するための AI エージェント実践入門](https://www.amazon.co.jp/%E7%8F%BE%E5%A0%B4%E3%81%A7%E6%B4%BB%E7%94%A8%E3%81%99%E3%82%8B%E3%81%9F%E3%82%81%E3%81%AEAI%E3%82%A8%E3%83%BC%E3%82%B8%E3%82%A7%E3%83%B3%E3%83%88%E5%AE%9F%E8%B7%B5%E5%85%A5%E9%96%80-KS%E6%83%85%E5%A0%B1%E7%A7%91%E5%AD%A6%E5%B0%82%E9%96%80%E6%9B%B8-%E5%A4%AA%E7%94%B0-%E7%9C%9F%E4%BA%BA/dp/4065401402)
+- OpenAI model list
+  - https://platform.openai.com/docs/models
+- OpenSearch Docker configuration files
+  - https://github.com/codelibs/docker-opensearch
+- Langfuse
+  - Group multiple traces using sessions
+    - https://langfuse.com/docs/observability/features/sessions?utm_source=chatgpt.com
+  - One agent per trace
+    - https://langfuse.com/integrations/model-providers/openai-py?utm_source=chatgpt.com
+- sudachi
+  - https://github.com/WorksApplications/elasticsearch-sudachi/
+  - http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/
+
+# Validation
+
+## What We Verified
+
+The AI agent aims to:
+
+- Act as a chatbot that searches OpenSearch and responds
+- Ask “follow-up questions” when the user’s question is ambiguous
+- Respond that there is “no answer” when the user’s question is not present in OpenSearch
+
+OpenSearch contains information about “Keanu Reeves”.
+
+We check that it does not answer beyond the information about Keanu Reeves.
+
+## Results
+
+### Case 1
+
+Since the question was about “the early life of Keanu Reeves,” we confirmed it could answer in a single interaction.
+
+#### Conversation with the chatbot
+
+User: I’d like to know about Keanu Reeves’s early life.
+
+Chatbot: Keanu Reeves was born on September 2, 1964 in Lebanon and grew up in Toronto, Canada. His father was an American geologist from Hawaii, and his mother was an English former dancer and designer. In his childhood he moved around the world with his mother’s remarried partners and grew up mainly in Toronto. He attended four high schools over five years, but ultimately did not graduate from high school.
+
+### Case 2
+
+Because the first question was ambiguous, the chatbot asked a follow-up question.
+
+Afterward the user provided details, but because it was not in the materials, we confirmed it responded that it could not answer.
+
+#### Conversation with the chatbot
+
+User: I want to know about Japan.
+
+Chatbot: What specific information about Japan would you like to know?
+
+User: I’d like to know about the history of the Sengoku period.
+
+Chatbot: I cannot answer. This cannot be confirmed within the provided materials.
+
+## Discussion
+
+We confirmed that the behavior is generally correct.
