@@ -70,6 +70,25 @@ services:
       - ../../data:/project/data
 
   # ----------------
+  # streamlit
+  # ----------------
+  streamlit-ui:
+    restart: "no"
+    tty: true
+    build:
+      context: ../../
+      dockerfile: ./docker/local/Dockerfile.streamlit-ui
+    depends_on:
+      - ai-agent
+    environment:
+      FASTAPI_BASE_URL: http://ai-agent:8501
+    # 起動時にポート指定（例）: STREAMLIT_PORT=8001 docker compose -f ./docker/local/docker-compose.yml up -d streamlit-ui
+    ports:
+      - "127.0.0.1:8501:8501"
+    volumes:
+      - ../../apps/streamlit-ui:/project
+
+  # ----------------
   # AI Agent Tuning
   # ----------------
   tuning-ai-agent:

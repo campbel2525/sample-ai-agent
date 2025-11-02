@@ -9,7 +9,7 @@ init: ## 開発作成
 	docker compose -f $(pf) -p $(pn) up -d
 	docker compose -f $(pf) -p $(pn) exec -it ai-agent pipenv install --dev
 	docker compose -f $(pf) -p $(pn) exec -it tuning-ai-agent pipenv install --dev
-
+	docker compose -f $(pf) -p $(pn) exec -it streamlit-ui pipenv install --dev
 
 # cp-env: ## .envファイルのコピー
 # 	cp apps/ai_agent/.env.example.example apps/ai_agent/.env
@@ -27,6 +27,9 @@ ai-agent-shell: ## dockerのshellに入る
 tuning-ai-agent-shell: ## dockerのshellに入る
 	docker compose -f $(pf) -p $(pn) exec tuning-ai-agent bash
 
+streamlit-ui-shell: ## streamlitのshellに入る
+	docker compose -f $(pf) -p $(pn) exec streamlit-ui bash
+
 check: ## コードのフォーマット
 # ai-agent
 	docker compose -f $(pf) -p $(pn) exec -it ai-agent pipenv run isort .
@@ -41,6 +44,12 @@ check: ## コードのフォーマット
 
 ai-agent-run:
 	docker compose -f $(pf) -p $(pn) exec -it ai-agent pipenv run uvicorn run_fastapi:app --reload --host 0.0.0.0 --port 8000
+
+streamlit-ui-up: ## streamlit-ui を起動（SPでポート指定）
+	STREAMLIT_PORT=8501 docker compose -f $(pf) -p $(pn) up -d streamlit-ui
+
+streamlit-ui-run: ## streamlitを起動（コンテナ内コマンド、--server.portに合わせる）
+	docker compose -f $(pf) -p $(pn) exec -it streamlit-ui pipenv run streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 8501
 
 destroy: ## 環境削除
 	make down
