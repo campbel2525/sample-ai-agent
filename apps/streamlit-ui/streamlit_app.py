@@ -249,7 +249,7 @@ def main():
     )
     with st.form("chat_form", clear_on_submit=True):
         chat_value = st.text_area(
-            "",
+            "メッセージ",
             key="chat_input_area",
             height=100,
             placeholder="メッセージを入力… (送信: ⌘/Ctrl + Enter)",
