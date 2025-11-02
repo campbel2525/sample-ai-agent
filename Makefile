@@ -15,10 +15,6 @@ init: ## 開発作成
 opensearch-setup:
 	docker compose -f $(pf) -p $(pn) exec -it ai-agent pipenv run python scripts/opensearch_setup.py
 
-# cp-env: ## .envファイルのコピー
-# 	cp apps/ai_agent/.env.example.example apps/ai_agent/.env
-# 	cp apps/tuning_ai_agent/.env.example apps/tuning_ai_agent/.env
-
 up: ## 開発立ち上げ
 	docker compose -f $(pf) -p $(pn) up -d
 
