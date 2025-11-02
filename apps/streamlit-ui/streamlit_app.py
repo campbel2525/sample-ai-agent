@@ -72,6 +72,55 @@ def parse_json_or_none(label: str, raw: str) -> Optional[Dict[str, Any]]:
 def main():
     st.set_page_config(page_title="AI Agent Chat UI", page_icon="🤖", layout="wide")
     init_state()
+    # ペンディング送信の処理（先に実行してから描画）
+    pending_payload = st.session_state.pop("pending_payload", None)
+    if pending_payload is not None:
+        # API呼び出し（会話は上側に描画され、その下に入力欄が来る）
+        try:
+            t0 = time.time()
+            resp = requests.post(
+                f"{DEFAULT_FASTAPI_BASE_URL}{EXEC_ENDPOINT}",
+                json=pending_payload,
+                timeout=REQUEST_TIMEOUT_SEC,
+            )
+            latency = time.time() - t0
+            if resp.status_code == 200:
+                data = resp.json()
+                st.session_state.last_request = pending_payload
+                st.session_state.last_response = data
+                answer = data.get("answer") or ""
+                # 会話にassistantを追加
+                st.session_state.messages.append({"role": "assistant", "content": answer})
+                # ターン履歴
+                st.session_state.turns.append(
+                    {
+                        "user": pending_payload.get("question", ""),
+                        "assistant": answer,
+                        "detail": {
+                            "latency_sec": round(latency, 2),
+                            "raw_response": data,
+                            "plan": (data.get("ai_agent_result") or {}).get("plan"),
+                            "subtasks": (data.get("ai_agent_result") or {}).get(
+                                "subtasks_detail"
+                            ),
+                            "ragas_scores": (data.get("ragas_result") or {}).get("scores")
+                            or {},
+                            "langfuse_session_id": data.get("langfuse_session_id"),
+                        },
+                    }
+                )
+            else:
+                st.error(f"APIエラー: {resp.status_code} {resp.text}")
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": "すみません、エラーが発生しました。"}
+                )
+        except Exception as e:
+            st.error(f"通信エラー: {e}")
+            st.session_state.messages.append(
+                {"role": "assistant", "content": "すみません、通信エラーが発生しました。"}
+            )
+
+    # 入力欄の固定は描画崩れのため一旦オフ（最下部に通常表示）
 
     # 固定URL（入力欄は廃止）
     with st.sidebar:
@@ -178,8 +227,14 @@ def main():
             with st.chat_message(m["role"]):
                 st.markdown(m["content"])
 
+    # 入力欄（ページ最下部）
     with st.form("chat_form", clear_on_submit=True):
-        chat_value = st.text_area("", key="chat_input_area", height=100, placeholder="メッセージを入力… (送信: ⌘+Enter)" )
+        chat_value = st.text_area(
+            "",
+            key="chat_input_area",
+            height=100,
+            placeholder="メッセージを入力… (送信: ⌘/Ctrl + Enter)",
+        )
         submitted = st.form_submit_button("送信", type="primary")
 
     # Cmd/Ctrl+Enter で送信ボタンをクリックするJS（簡易）
@@ -203,15 +258,11 @@ def main():
         height=0,
     )
 
-    user_input: Optional[str] = None
+    # 送信処理（フォームはページ最下部に1つだけ）。即時APIは叩かずpayloadを保存→再描画の先頭で処理
     if submitted and chat_value and chat_value.strip():
-        user_input = chat_value.strip()
-        # 送信: 直前までの履歴をchat_historyに
+        user_input: str = chat_value.strip()
+        # 先にユーザーの発話を会話に追加
         st.session_state.messages.append({"role": "user", "content": user_input})
-        # 直近のユーザー入力は即時表示（次回リロード待ちにしない）
-        with st.chat_message("user"):
-            st.markdown(user_input)
-
         chat_history = to_chat_history(st.session_state.messages[:-1])
 
         # JSONパラメータの解析
@@ -229,14 +280,11 @@ def main():
             "final_answer_params", final_answer_params_raw
         )
 
-        # 空文字はNoneへ
         def nvl(s: str) -> Optional[str]:
             return s if s else None
 
-        # RAGasの必須チェック（未入力なら今回だけ自動無効化）
         ragas_ref_trim = (ragas_reference or "").strip()
         ragas_enabled = bool(is_run_ragas and ragas_ref_trim)
-        # メッセージは出さず静かに無効化
 
         payload: Dict[str, Any] = {
             "question": user_input,
@@ -273,84 +321,10 @@ def main():
             "ragas_reference": ragas_ref_trim if ragas_enabled else None,
         }
 
-        st.session_state.last_request = payload
+        st.session_state["pending_payload"] = payload
+        st.rerun()
 
-        with st.chat_message("assistant"):
-            with st.spinner("エージェント実行中..."):
-                try:
-                    t0 = time.time()
-                    resp = requests.post(
-                        f"{DEFAULT_FASTAPI_BASE_URL}{EXEC_ENDPOINT}",
-                        json=payload,
-                        timeout=REQUEST_TIMEOUT_SEC,
-                    )
-                    latency = time.time() - t0
-                    if resp.status_code != 200:
-                        st.error(f"APIエラー: {resp.status_code} {resp.text}")
-                        st.session_state.messages.append(
-                            {
-                                "role": "assistant",
-                                "content": "すみません、エラーが発生しました。",
-                            }
-                        )
-                    else:
-                        data = resp.json()
-                        st.session_state.last_response = data
-                        answer = data.get("answer") or ""
-                        st.markdown(answer)
-                        st.session_state.messages.append(
-                            {"role": "assistant", "content": answer}
-                        )
-
-                        # フルAPIレスポンスを表示
-                        with st.expander("APIレスポンス（raw）"):
-                            st.json(data)
-
-                        # 参考用に最低限のメタも保持
-                        latency_sec = round(latency, 2)
-                        plan = (data.get("ai_agent_result") or {}).get("plan")
-                        subtasks = (data.get("ai_agent_result") or {}).get(
-                            "subtasks_detail"
-                        )
-                        ragas_scores = (data.get("ragas_result") or {}).get("scores")
-                        sid = data.get("langfuse_session_id")
-
-                        # ターン詳細を履歴に保存（次回以降の再描画でも保持）
-                        st.session_state.turns.append(
-                            {
-                                "user": user_input,
-                                "assistant": answer,
-                                "detail": {
-                                    "latency_sec": latency_sec,
-                                    "raw_response": data,
-                                    "plan": plan,
-                                    "subtasks": subtasks,
-                                    "ragas_scores": ragas_scores or {},
-                                    "langfuse_session_id": sid,
-                                },
-                            }
-                        )
-                except Exception as e:
-                    st.error(f"通信エラー: {e}")
-                    st.session_state.messages.append(
-                        {
-                            "role": "assistant",
-                            "content": "すみません、通信エラーが発生しました。",
-                        }
-                    )
-
-    st.divider()
-    cols = st.columns(3)
-    if cols[0].button("履歴クリア"):
-        st.session_state.messages = []
-        st.session_state.last_request = None
-        st.session_state.last_response = None
-        st.session_state.turns = []
-        st.experimental_rerun()
-    if cols[1].button("最後のリクエスト表示"):
-        st.json(st.session_state.last_request)
-    if cols[2].button("最後のレスポンス表示"):
-        st.json(st.session_state.last_response)
+    # （操作ボタン省略）
 
 
 if __name__ == "__main__":

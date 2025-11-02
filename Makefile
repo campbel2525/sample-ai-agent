@@ -10,6 +10,7 @@ init: ## 開発作成
 	docker compose -f $(pf) -p $(pn) exec -it ai-agent pipenv install --dev
 	docker compose -f $(pf) -p $(pn) exec -it tuning-ai-agent pipenv install --dev
 	docker compose -f $(pf) -p $(pn) exec -it streamlit-ui pipenv install --dev
+	make opensearch-setup
 
 opensearch-setup:
 	docker compose -f $(pf) -p $(pn) exec -it ai-agent pipenv run python scripts/opensearch_setup.py
