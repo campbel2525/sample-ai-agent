@@ -27,7 +27,7 @@ AI エージェントは FastAPI にて API 化されているため API を叩�
 
 ## 主な機能
 
-- メインの機能は chatbot の AI エージェント
+- メインの機能は chatbot の AI エージェント API
   - シングルエージェント
   - Plan-and-Execute 型
 - プログラムのディレクトリ: `apps/ai_agent`
@@ -43,6 +43,8 @@ AI エージェントは FastAPI にて API 化されているため API を叩�
     - Langfuse の ID など
     - RAGas の結果
   - 今回は API の機能はサブ機能と位置付けているためフォルダ構成などにこだわらず 1 ファイル(`apps/ai_agent/run_fastapi.py`)にまとめている。また認証機能などもなし。
+- streamli-ui
+  - AI エージェント API を使用する UI 機能
 - Langfuse を使用しているため AI エージェントの実行ログをブラウザで確認可能
   - https://langfuse.com/
   - `answer_relevancy`、`answer_similarity`のみ返すようになっている
@@ -114,10 +116,10 @@ make init
 3. OpenSearch にデータのセットアップ
 
 ```
-docker compose -f "./docker/local/docker-compose.yml" -p chatbot-ai-agent exec -it ai-agent pipenv run python scripts/setup.py
+make opensearch-setup
 ```
 
-`data/insert_data/test_data.txt`の中のテキストが 512 文字、128 文字の重複のチャンクされて OpenSearch の index にインサート
+キアヌリーブスについての内容(`data/insert_data/test_data.txt`の中のテキスト)が 512 文字、128 文字の重複のチャンクされて OpenSearch の index にインサート
 
 4. AI エージェント API の起動
 
@@ -127,7 +129,7 @@ make ai-agent-run
 
 AI エージェント API のテストの方法
 
-[http://localhost:8000/docs](http://localhost:8000/docs)を開いて、`Exec Chatbot Ai Agent`の API を実行して適切にレスポンスが返ってくれば OK
+[http://localhost:8000/docs](http://localhost:8000/docs)を開いて`Exec Chatbot Ai Agent`の API を実行して適切にレスポンスが返ってくれば OK
 
 リクエスト Body には以下を指定する
 
@@ -166,6 +168,14 @@ AI エージェント API のテストの方法
   "ragas_reference": "キアヌ・リーブスの代表作には『スピード』（1994年）、『マトリックス』シリーズ（1999年〜）、『ジョン・ウィック』シリーズ（2014年〜）があります。彼は「聖人」と呼ばれるほどの人格者として知られ、映画の報酬の大部分を慈善事業に寄付するなど、その優しい人柄でも有名です。特に『マトリックス』の報酬の70％をガン研究に寄付したエピソードは広く知られています。"
 }
 ```
+
+5. streamlit の起動
+
+```
+make streamlit-ui-run
+```
+
+[http://localhost:8501/](http://localhost:8501/)を開いて画面が表示されれば OK
 
 # チューニング AI を使ったチューニング方法
 
