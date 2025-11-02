@@ -59,6 +59,21 @@ def run_agent_with_langfuse(
     if lf is not None:
         with lf.start_as_current_span(name=langfuse_trace_name) as span:
             try:
+                # AgentSettings の概要（存在すれば）をメタデータに付与
+                settings_meta = None
+                try:
+                    s = getattr(agent, "settings", None)
+                    if s is not None:
+                        settings_meta = {
+                            "planner_model": s.planner.model_name,
+                            "subtask_select_tool_model": s.subtask_select_tool.model_name,
+                            "subtask_reflection_model": s.subtask_reflection.model_name,
+                            "subtask_retry_answer_model": s.subtask_retry_answer.model_name,
+                            "final_answer_model": s.final_answer.model_name,
+                        }
+                except Exception:
+                    settings_meta = None
+
                 span.update_trace(
                     name=langfuse_trace_name,  # ★ 引数を使用
                     input={"query": query, "chat_history": chat_history},
@@ -68,6 +83,7 @@ def run_agent_with_langfuse(
                         "tools": [tool.name for tool in agent.tools],
                         "has_chat_history": bool(chat_history),
                         "chat_history_length": len(chat_history) if chat_history else 0,
+                        "agent_settings": settings_meta,
                     },
                     session_id=langfuse_session_id,
                     user_id=langfuse_user_id,

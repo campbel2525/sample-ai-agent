@@ -24,22 +24,6 @@ class Settings(BaseSettings):
     fastapi_port: int = 0
     fastapi_host: str = ""
 
-    # AI エージェントの設定
-    planner_model_name: str = "gpt-4o-2024-08-06"
-    planner_model_params: Dict[str, Any] = {"temperature": 0, "seed": 0}
-
-    subtask_tool_selection_model_name: str = "gpt-4o-2024-08-06"
-    subtask_tool_selection_model_params: Dict[str, Any] = {"temperature": 0, "seed": 0}
-
-    subtask_answer_model_name: str = "gpt-4o-2024-08-06"
-    subtask_answer_model_params: Dict[str, Any] = {"temperature": 0, "seed": 0}
-
-    subtask_reflection_model_name: str = "gpt-4o-2024-08-06"
-    subtask_reflection_model_params: Dict[str, Any] = {"temperature": 0, "seed": 0}
-
-    create_last_answer_model_name: str = "gpt-4o-2024-08-06"
-    create_last_answer_model_params: Dict[str, Any] = {"temperature": 0, "seed": 0}
-
     # Langfuse settings (optional)
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""

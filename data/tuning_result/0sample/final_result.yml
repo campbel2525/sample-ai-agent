@@ -1,6 +1,6 @@
 execution_datetime: '20250824171612'
 final_prompts:
-  ai_agent_create_last_answer_system_prompt: 'あなたは汎用的なAIアシスタントの最終回答作成担当です。
+  ai_agent_final_answer_system_prompt: 'あなたは汎用的なAIアシスタントの最終回答作成担当です。
 
     回答までの全体の流れは計画立案 → サブタスク実行 [ツール実行 → サブタスク回答 → リフレクション] → 最終回答となります。
 
@@ -20,7 +20,7 @@ final_prompts:
     - 利用可能なツールで対応できない質問の場合は、その旨を説明してください
 
     '
-  ai_agent_create_last_answer_user_prompt: 'ユーザーの質問: {query}
+  ai_agent_final_answer_user_prompt: 'ユーザーの質問: {query}
 
 
     回答のための計画と実行結果: {subtask_results}
@@ -65,7 +65,7 @@ final_prompts:
   ai_agent_subtask_retry_answer_user_prompt: '1.ツール選択・実行をリフレクションの結果に従ってやり直してください
 
     '
-  ai_agent_subtask_system_prompt: 'あなたは汎用的なAIアシスタントのサブタスク実行を担当するエージェントです。
+  ai_agent_subtask_select_tool_system_prompt: 'あなたは汎用的なAIアシスタントのサブタスク実行を担当するエージェントです。
 
     回答までの全体の流れは計画立案 → サブタスク実行 [ツール実行 → サブタスク回答 → リフレクション] → 最終回答となります。
 
@@ -113,7 +113,7 @@ final_prompts:
     評価がOKの場合は、サブタスク回答を終了します。
 
     '
-  ai_agent_subtask_tool_selection_user_prompt: 'ユーザーの元の質問: {query}
+  ai_agent_subtask_select_tool_user_prompt: 'ユーザーの元の質問: {query}
 
     回答のための計画: {plan}
 

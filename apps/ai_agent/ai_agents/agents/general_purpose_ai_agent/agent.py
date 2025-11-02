@@ -27,13 +27,14 @@ from pydantic import BaseModel
 from .custom_logger import setup_logger
 from .models import (
     AgentResult,
-    LLMPhaseConfigs,
+    AgentSettings,
+    PromptSystemUser,
+    PromptUserOnly,
     Plan,
     ReflectionResult,
     Subtask,
     ToolResult,
 )
-from .prompts import AgentPrompts
 
 logger = setup_logger(__file__)
 
@@ -65,17 +66,15 @@ class Agent:
         self,
         openai_base_url: str,
         openai_api_key: str,
-        llm_phase_configs: LLMPhaseConfigs = LLMPhaseConfigs(),
+        settings: AgentSettings | None = None,
         tools: list[BaseTool] = [],
-        prompts: AgentPrompts = AgentPrompts(),
         max_challenge_count: int = 3,
     ) -> None:
         self.openai_base_url = openai_base_url
         self.openai_api_key = openai_api_key
-        self.llm_phase_configs = llm_phase_configs
+        self.settings = settings or AgentSettings()
         self.tools = tools
         self.tool_map = {tool.name: tool for tool in tools}
-        self.prompts = prompts
 
         # OpenAIクライアントを初期化
         self.client = OpenAI(
@@ -97,46 +96,27 @@ class Agent:
 
         logger.info("🚀 Starting plan generation process...")
 
-        # tool定義を渡しシステムプロンプトを生成
-        system_prompt = self.prompts.planner_system_prompt
-
-        # 過去の履歴を文字列にしてプロンプトに含める場合は以下を使用
-        # その他にやることは以下
-        # - _format_chat_history()のコメントアウトを外す
-        # - prompts.pyのPLANNER_USER_PROMPTに`{chat_history}`を含めること
-        # # チャット履歴をフォーマット
-        # chat_history_text = self._format_chat_history(state.get("chat_history", []))
-        # user_prompt = self.prompts.planner_user_prompt.format(
-        #     query=state["query"],
-        #     chat_history=chat_history_text,
-        # )
-        # messages: list[ChatCompletionMessageParam] = [
-        #     {"role": "system", "content": system_prompt},
-        #     {"role": "user", "content": user_prompt},
-        # ]
-
-        # チャット履歴は配列としてそのまま渡す場合は以下を使用
-        # チャット履歴をフォーマット
-        user_prompt = self.prompts.planner_user_prompt.format(
-            query=state["query"],
+        # チャット履歴 + プロンプトからメッセージを生成
+        messages: list[ChatCompletionMessageParam] = list(state.get("chat_history", []))
+        planner_prompt = cast(PromptSystemUser, self.settings.planner.prompt)
+        messages.append({"role": "system", "content": planner_prompt.system_prompt})
+        messages.append(
+            {
+                "role": "user",
+                "content": planner_prompt.user_prompt.format(query=state["query"]),
+            }
         )
-        messages: list[ChatCompletionMessageParam]
-        messages = state.get("chat_history", []) + [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
 
         logger.debug(f"Final prompt messages: {messages}")
 
         # OpenAIにリクエストを送信
         try:
             logger.info("Sending request to OpenAI...")
-            cfg = self.llm_phase_configs.planner
             response = self._chat_parse(
-                model=cfg.model_name,
+                model=self.settings.planner.model_name,
                 messages=messages,
                 response_format=Plan,
-                **cfg.params,
+                **self.settings.planner.model_params,
             )
             logger.info("✅ Successfully received response from OpenAI.")
         except Exception as e:
@@ -172,16 +152,27 @@ class Agent:
         # リトライされたかどうかでプロンプトを切り替える
         if state["challenge_count"] == 0:
             logger.debug("Creating user prompt for tool selection...")
-            user_prompt = self.prompts.subtask_tool_selection_user_prompt.format(
-                query=state["query"],
-                plan=state["plan"],
-                subtask=state["subtask"],
+            st_prompt = cast(PromptSystemUser, self.settings.subtask_select_tool.prompt)
+            user_prompt = st_prompt.user_prompt.format(
+                query=state["query"], plan=state["plan"], subtask=state["subtask"]
             )
-
             messages = [
-                {"role": "system", "content": self.prompts.subtask_system_prompt},
+                {"role": "system", "content": st_prompt.system_prompt},
                 {"role": "user", "content": user_prompt},
             ]
+            try:
+                logger.info("Sending request to OpenAI...")
+                response = self._chat_create(
+                    model=self.settings.subtask_select_tool.model_name,
+                    messages=messages,
+                    tools=openai_tools,
+                    **self.settings.subtask_select_tool.model_params,
+                )
+                logger.info(response.choices[0].message.tool_calls)
+                logger.info("✅ Successfully received response from OpenAI.")
+            except Exception as e:
+                logger.error(f"Error during OpenAI request: {e}")
+                raise
 
         else:
             logger.debug("Creating user prompt for tool retry...")
@@ -194,27 +185,24 @@ class Agent:
                 if message["role"] != "tool" and "tool_calls" not in message
             ]
 
-            user_retry_prompt = self.prompts.subtask_retry_answer_user_prompt
-            user_message: ChatCompletionMessageParam = {
-                "role": "user",
-                "content": user_retry_prompt,
-            }
-            messages.append(user_message)
-
-        try:
-            logger.info("Sending request to OpenAI...")
-            cfg = self.llm_phase_configs.subtask_tool_selection
-            response = self._chat_create(
-                model=cfg.model_name,
-                messages=messages,
-                tools=openai_tools,
-                **cfg.params,
+            retry_prompt = cast(
+                PromptUserOnly, self.settings.subtask_retry_answer.prompt
             )
-            logger.info(response.choices[0].message.tool_calls)
-            logger.info("✅ Successfully received response from OpenAI.")
-        except Exception as e:
-            logger.error(f"Error during OpenAI request: {e}")
-            raise
+            messages.append({"role": "user", "content": retry_prompt.user_prompt})
+
+            try:
+                logger.info("Sending request to OpenAI...")
+                response = self._chat_create(
+                    model=self.settings.subtask_retry_answer.model_name,
+                    messages=messages,
+                    tools=openai_tools,
+                    **self.settings.subtask_retry_answer.model_params,
+                )
+                logger.info(response.choices[0].message.tool_calls)
+                logger.info("✅ Successfully received response from OpenAI.")
+            except Exception as e:
+                logger.error(f"Error during OpenAI request: {e}")
+                raise
 
         tool_calls = response.choices[0].message.tool_calls
         ai_message: ChatCompletionAssistantMessageParam = {
@@ -286,11 +274,11 @@ class Agent:
 
         try:
             logger.info("Sending request to OpenAI...")
-            cfg = self.llm_phase_configs.subtask_answer
+            # 回答生成は subtask_answer のモデルを使用（retry と同一設定を流用）
             response = self._chat_create(
-                model=cfg.model_name,
+                model=self.settings.subtask_retry_answer.model_name,
                 messages=messages,
-                **cfg.params,
+                **self.settings.subtask_retry_answer.model_params,
             )
             logger.info("✅ Successfully received response from OpenAI.")
         except Exception as e:
@@ -331,18 +319,16 @@ class Agent:
         logger.info("🚀 Starting reflection process...")
         messages = state["messages"]
 
-        user_prompt = self.prompts.subtask_reflection_user_prompt
-
-        messages.append({"role": "user", "content": user_prompt})
+        refl_prompt = cast(PromptUserOnly, self.settings.subtask_reflection.prompt)
+        messages.append({"role": "user", "content": refl_prompt.user_prompt})
 
         try:
             logger.info("Sending request to OpenAI...")
-            cfg = self.llm_phase_configs.subtask_reflection
             response = self._chat_parse(
-                model=cfg.model_name,
+                model=self.settings.subtask_reflection.model_name,
                 messages=messages,
                 response_format=ReflectionResult,
-                **cfg.params,
+                **self.settings.subtask_reflection.model_params,
             )
             logger.info("✅ Successfully received response from OpenAI.")
         except Exception as e:
@@ -389,30 +375,30 @@ class Agent:
         """
 
         logger.info("🚀 Starting final answer creation process...")
-        system_prompt = self.prompts.create_last_answer_system_prompt
-
         # サブタスク結果のうちタスク内容と回答のみを取得
         subtask_results = [
             (result.task_name, result.subtask_answer)
             for result in state["subtask_results"]
         ]
-        user_prompt = self.prompts.create_last_answer_user_prompt.format(
-            query=state["query"],
-            plan=state["plan"],
-            subtask_results=str(subtask_results),
-        )
+        fa_prompt = cast(PromptSystemUser, self.settings.final_answer.prompt)
         messages: list[ChatCompletionMessageParam] = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
+            {"role": "system", "content": fa_prompt.system_prompt},
+            {
+                "role": "user",
+                "content": fa_prompt.user_prompt.format(
+                    query=state["query"],
+                    plan=state["plan"],
+                    subtask_results=str(subtask_results),
+                ),
+            },
         ]
 
         try:
             logger.info("Sending request to OpenAI...")
-            cfg = self.llm_phase_configs.create_last_answer
             response = self._chat_create(
-                model=cfg.model_name,
+                model=self.settings.final_answer.model_name,
                 messages=messages,
-                **cfg.params,
+                **self.settings.final_answer.model_params,
             )
             logger.info("✅ Successfully received response from OpenAI.")
         except Exception as e:

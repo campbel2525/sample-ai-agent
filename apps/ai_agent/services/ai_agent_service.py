@@ -13,7 +13,7 @@ from ragas.metrics import answer_relevancy, answer_similarity
 from ai_agents.agents.general_purpose_ai_agent.agent import Agent
 from ai_agents.agents.general_purpose_ai_agent.models import (
     AgentResult,
-    LLMPhaseConfigs,
+    AgentSettings,
 )
 from services.langfuse.wrapper import run_agent_with_langfuse
 from config.settings import Settings
@@ -23,9 +23,8 @@ from services.openai_service import get_embedding_client, get_openai_client
 def run_ai_agent(
     query: str,
     chat_history: list[ChatCompletionMessageParam],
-    llm_phase_configs: LLMPhaseConfigs,
+    ai_agent_settings: AgentSettings,
     ai_agent_tools: Any,
-    ai_agent_prompts: Any,
     ai_agent_max_challenge_count: int = 3,
     langfuse_session_id: Optional[str] = None,
     langfuse_trace_name: str = "ai_agent_execution",
@@ -37,8 +36,8 @@ def run_ai_agent(
     ----------
     tools : Any
         エージェントに渡すツール群。
-    ai_agent_prompts : Any
-        エージェントのプロンプト定義。
+    ai_agent_settings : AgentSettings
+        フェーズ別のプロンプトとモデル設定。
     query : str
         ユーザーからの質問。
     is_run_ragas : bool, default True
@@ -66,9 +65,8 @@ def run_ai_agent(
     agent = Agent(
         openai_base_url=settings.openai_base_url,
         openai_api_key=settings.openai_api_key,
-        llm_phase_configs=llm_phase_configs,
+        settings=ai_agent_settings,
         tools=ai_agent_tools,
-        prompts=ai_agent_prompts,
         max_challenge_count=ai_agent_max_challenge_count,
     )
 
@@ -90,9 +88,8 @@ def run_ai_agent(
 def run_ai_agent_with_rags(
     query: str,
     chat_history: list[ChatCompletionMessageParam],
-    llm_phase_configs: LLMPhaseConfigs,
+    ai_agent_settings: AgentSettings,
     ai_agent_tools: Any,
-    ai_agent_prompts: Any,
     ai_agent_max_challenge_count: int = 3,
     langfuse_session_id: Optional[str] = None,
     langfuse_trace_name: str = "ai_agent_execution",
@@ -108,8 +105,8 @@ def run_ai_agent_with_rags(
     ----------
     tools : Any
         エージェントに渡すツール群。
-    ai_agent_prompts : Any
-        エージェントのプロンプト定義。
+    ai_agent_settings : AgentSettings
+        フェーズ別のプロンプトとモデル設定。
     query : str
         ユーザーからの質問。
     is_run_ragas : bool, default True
@@ -137,9 +134,8 @@ def run_ai_agent_with_rags(
     agent = Agent(
         openai_base_url=settings.openai_base_url,
         openai_api_key=settings.openai_api_key,
-        llm_phase_configs=llm_phase_configs,
+        settings=ai_agent_settings,
         tools=ai_agent_tools,
-        prompts=ai_agent_prompts,
         max_challenge_count=ai_agent_max_challenge_count,
     )
 

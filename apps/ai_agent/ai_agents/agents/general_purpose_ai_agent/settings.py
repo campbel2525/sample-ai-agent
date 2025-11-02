@@ -1,5 +1,8 @@
-from typing import Optional
+from typing import Any, Dict
 
+# planner
+PLANNER_MODEL_NAME: str = "gpt-4o-2024-08-06"
+PLANNER_MODEL_PARAMS: Dict[str, Any] = {"temperature": 0, "seed": 0}
 PLANNER_SYSTEM_PROMPT = """
 # 役割
 あなたはRAGチャットボットのプランナーです。回答は提供資料（検索ツールの結果）に厳密に基づきます。資料に無い事実・一般常識・推測で補完してはいけません。
@@ -40,21 +43,14 @@ PLANNER_SYSTEM_PROMPT = """
 計画:
 - ユーザーに追い質問をする
 """
-
 PLANNER_USER_PROMPT = """
 {query}
 """
 
-# 過去の履歴を文字列にしてプロンプトに含める場合は以下を使用
-# PLANNER_USER_PROMPT = """
-# # チャット履歴
-# {chat_history}
-
-# # 現在の質問
-# {query}
-# """
-
-SUBTASK_SYSTEM_PROMPT = """
+# subtask select tool
+SUBTASK_TOOL_SELECTION_MODEL_NAME: str = "gpt-4o-2024-08-06"
+SUBTASK_TOOL_SELECTION_MODEL_PARAMS: Dict[str, Any] = {"temperature": 0, "seed": 0}
+SUBTASK_TOOL_SELECTION_SYSTEM_PROMPT = """
 あなたはRAGチャットボットのサブタスク実行を担当するエージェントです。
 回答までの全体の流れは 計画立案 → サブタスク実行 [ツール実行 → サブタスク回答 → リフレクション] → 最終回答 です。
 サブタスクはユーザーの質問に答えるための一手です。最終回答は全サブタスクの結果を組み合わせて別エージェントが作成します。
@@ -93,8 +89,7 @@ SUBTASK_SYSTEM_PROMPT = """
 アドバイスは過去と重複させず、次の試行で実行可能な一文にしてください。
 評価がOKの場合は、サブタスク回答を終了します。
 """
-
-SUBTASK_TOOL_EXECUTION_USER_PROMPT = """
+SUBTASK_TOOL_SELECTION_USER_PROMPT = """
 ユーザーの元の質問: {query}
 回答のための計画: {plan}
 サブタスク: {subtask}
@@ -114,6 +109,9 @@ SUBTASK_TOOL_EXECUTION_USER_PROMPT = """
 注記：サブタスクが「ユーザーに追い質問をする」の場合、この指示（クエリ設計・ツール実行）は無視してください。ツールは使用せず、追い質問の一文のみをサブタスク回答として出力してください。
 """
 
+# subtask reflection
+SUBTASK_REFLECTION_MODEL_NAME: str = "gpt-4o-2024-08-06"
+SUBTASK_REFLECTION_MODEL_PARAMS: Dict[str, Any] = {"temperature": 0, "seed": 0}
 SUBTASK_REFLECTION_USER_PROMPT = """
 3.リフレクションを開始してください。
 - 取得結果の網羅性・関連性・重複を評価し、主要語（固有名・概念・バージョン等）の一致度を簡潔に判断してください。
@@ -126,11 +124,17 @@ SUBTASK_REFLECTION_USER_PROMPT = """
 - query_refinement_needed の場合のみ、advice内に「improved_query: ...」を1行で示してください。
 """
 
+# subtask retry answer
+SUBTASK_RETRY_ANSWER_MODEL_NAME: str = "gpt-4o-2024-08-06"
+SUBTASK_RETRY_ANSWER_MODEL_PARAMS: Dict[str, Any] = {"temperature": 0, "seed": 0}
 SUBTASK_RETRY_ANSWER_USER_PROMPT = """
 1.ツール選択・実行をリフレクションの結果に従ってやり直してください
 """
 
-CREATE_LAST_ANSWER_SYSTEM_PROMPT = """
+# final answer
+FINAL_ANSWER_MODEL_NAME: str = "gpt-4o-2024-08-06"
+FINAL_ANSWER_MODEL_PARAMS: Dict[str, Any] = {"temperature": 0, "seed": 0}
+FINAL_ANSWER_SYSTEM_PROMPT = """
 あなたはRAGチャットボットの最終回答担当です。出力はサブタスクの結果（根拠つき）にのみ基づきます。外部知識や推測は禁止です。
 
 出力方針:
@@ -145,8 +149,7 @@ CREATE_LAST_ANSWER_SYSTEM_PROMPT = """
 特例（追い質問）:
 - 計画に「ユーザーに追い質問をする」が含まれる場合、最終回答はその追い質問の一文のみ（前置きや補足なし、文末の句読点は1つ）とする。
 """
-
-CREATE_LAST_ANSWER_USER_PROMPT = """
+FINAL_ANSWER_USER_PROMPT = """
 ユーザーの質問: {query}
 
 回答のための計画と実行結果: {subtask_results}
@@ -154,35 +157,3 @@ CREATE_LAST_ANSWER_USER_PROMPT = """
 上記に基づき、資料の根拠がある範囲でのみ回答を作成してください。根拠が無い場合は不回答規則に従ってください。
 なお、追い質問が必要と判断された場合は、追い質問のみを最終回答として返してください。
 """
-
-
-class AgentPrompts:
-    def __init__(
-        self,
-        planner_system_prompt: Optional[str] = None,
-        planner_user_prompt: Optional[str] = None,
-        subtask_system_prompt: Optional[str] = None,
-        subtask_tool_selection_user_prompt: Optional[str] = None,
-        subtask_reflection_user_prompt: Optional[str] = None,
-        subtask_retry_answer_user_prompt: Optional[str] = None,
-        create_last_answer_system_prompt: Optional[str] = None,
-        create_last_answer_user_prompt: Optional[str] = None,
-    ) -> None:
-        self.planner_system_prompt = planner_system_prompt or PLANNER_SYSTEM_PROMPT
-        self.planner_user_prompt = planner_user_prompt or PLANNER_USER_PROMPT
-        self.subtask_system_prompt = subtask_system_prompt or SUBTASK_SYSTEM_PROMPT
-        self.subtask_tool_selection_user_prompt = (
-            subtask_tool_selection_user_prompt or SUBTASK_TOOL_EXECUTION_USER_PROMPT
-        )
-        self.subtask_reflection_user_prompt = (
-            subtask_reflection_user_prompt or SUBTASK_REFLECTION_USER_PROMPT
-        )
-        self.subtask_retry_answer_user_prompt = (
-            subtask_retry_answer_user_prompt or SUBTASK_RETRY_ANSWER_USER_PROMPT
-        )
-        self.create_last_answer_system_prompt = (
-            create_last_answer_system_prompt or CREATE_LAST_ANSWER_SYSTEM_PROMPT
-        )
-        self.create_last_answer_user_prompt = (
-            create_last_answer_user_prompt or CREATE_LAST_ANSWER_USER_PROMPT
-        )

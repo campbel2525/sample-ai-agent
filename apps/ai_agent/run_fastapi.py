@@ -3,21 +3,21 @@ import uuid
 from typing import Any, List, Optional
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel, Field, model_validator
 from ragas.metrics import answer_relevancy, answer_similarity
 
-from ai_agents.agents.general_purpose_ai_agent.models import LLMConfig, LLMPhaseConfigs
-from ai_agents.agents.general_purpose_ai_agent.prompts import (
-    CREATE_LAST_ANSWER_SYSTEM_PROMPT,
-    CREATE_LAST_ANSWER_USER_PROMPT,
+from ai_agents.agents.general_purpose_ai_agent.models import AgentSettings
+from ai_agents.agents.general_purpose_ai_agent.settings import (
     PLANNER_SYSTEM_PROMPT,
     PLANNER_USER_PROMPT,
+    SUBTASK_TOOL_SELECTION_SYSTEM_PROMPT,
+    SUBTASK_TOOL_SELECTION_USER_PROMPT,
     SUBTASK_REFLECTION_USER_PROMPT,
     SUBTASK_RETRY_ANSWER_USER_PROMPT,
-    SUBTASK_SYSTEM_PROMPT,
-    SUBTASK_TOOL_EXECUTION_USER_PROMPT,
-    AgentPrompts,
+    FINAL_ANSWER_SYSTEM_PROMPT,
+    FINAL_ANSWER_USER_PROMPT,
 )
 from ai_agents.tools.hybrid_search_tool import HybridSearchTool
 from config.settings import Settings
@@ -54,109 +54,113 @@ class AIAgentRequest(BaseModel):
         },
     )
 
-    # LLMPhaseConfigs関連パラメータ（nullable）
+    # AgentSettings: モデル設定（nullable）
     planner_model_name: Optional[str] = Field(
         default=None,
         description="プランナーモデル名",
         examples=["gpt-4o-2024-08-06"],
     )
+    planner_model_params: Optional[dict] = Field(
+        default=None,
+        description="プランナーモデルパラメータ",
+        examples=[{"temperature": 0, "seed": 0}],
+    )
+    # planner prompts（順序合わせ）
+    # （上で定義済み）
     subtask_tool_selection_model_name: Optional[str] = Field(
         default=None,
         description="サブタスクツール選択モデル名",
         examples=["gpt-4o-2024-08-06"],
     )
-    subtask_answer_model_name: Optional[str] = Field(
+    subtask_tool_selection_model_params: Optional[dict] = Field(
         default=None,
-        description="サブタスク回答モデル名",
-        examples=["gpt-4o-2024-08-06"],
+        description="サブタスクツール選択モデルパラメータ",
+        examples=[{"temperature": 0, "seed": 0}],
     )
-    subtask_reflection_model_name: Optional[str] = Field(
+    # subtask_retry_answer_model_name は順序の都合で後方に再定義
+    subtask_retry_answer_model_params: Optional[dict] = Field(
         default=None,
-        description="サブタスクリフレクションモデル名",
-        examples=["gpt-4o-2024-08-06"],
+        description="サブタスクリトライ回答モデルパラメータ",
+        examples=[{"temperature": 0, "seed": 0}],
     )
-    create_last_answer_model_name: Optional[str] = Field(
+    # subtask_reflection_model_name は順序の都合で後方に再定義
+    final_answer_model_name: Optional[str] = Field(
         default=None,
         description="最終回答モデル名",
         examples=["gpt-4o-2024-08-06"],
     )
-    planner_params: Optional[dict] = Field(
-        default=None,
-        description="プランナーモデルパラメータ",
-        examples=[{"temperature": 0.7, "max_tokens": 1000}],
-    )
-    subtask_tool_selection_model_params: Optional[dict] = Field(
-        default=None,
-        description="サブタスクツール選択モデルパラメータ",
-        examples=[{"temperature": 0.7, "max_tokens": 1000}],
-    )
-    subtask_answer_model_params: Optional[dict] = Field(
-        default=None,
-        description="サブタスク回答モデルパラメータ",
-        examples=[{"temperature": 0.7, "max_tokens": 1000}],
-    )
     subtask_reflection_model_params: Optional[dict] = Field(
         default=None,
         description="サブタスクリフレクションモデルパラメータ",
-        examples=[{"temperature": 0.7, "max_tokens": 1000}],
+        examples=[{"temperature": 0, "seed": 0}],
     )
-    create_last_answer_model_params: Optional[dict] = Field(
+    final_answer_model_params: Optional[dict] = Field(
         default=None,
         description="最終回答モデルパラメータ",
-        examples=[{"temperature": 0.7, "max_tokens": 1000}],
+        examples=[{"temperature": 0, "seed": 0}],
     )
 
-    # AIエージェントプロンプト設定パラメータ（nullable）
-    ai_agent_planner_system_prompt: Optional[str] = Field(
+    # AgentSettings: プロンプト設定（nullable）
+    planner_system_prompt: Optional[str] = Field(
         default=None,
         description="プランナーシステムプロンプト",
         examples=[
             "あなたは優秀なプランナーです。ユーザーの質問を分析し、適切なサブタスクに分解してください。"
         ],  # noqa: E501
     )
-    ai_agent_planner_user_prompt: Optional[str] = Field(
+    planner_user_prompt: Optional[str] = Field(
         default=None,
         description="プランナーユーザープロンプト",
         examples=[
             "質問: {query}\n\n上記の質問に答えるために必要なサブタスクを作成してください。"
         ],  # noqa: E501
     )
-    ai_agent_subtask_system_prompt: Optional[str] = Field(
+    subtask_tool_selection_system_prompt: Optional[str] = Field(
         default=None,
         description="サブタスクシステムプロンプト",
         examples=[
             "あなたは与えられたサブタスクを実行する専門家です。利用可能なツールを使用してタスクを完了してください。"
         ],  # noqa: E501
     )
-    ai_agent_subtask_tool_selection_user_prompt: Optional[str] = Field(
+    subtask_tool_selection_user_prompt: Optional[str] = Field(
         default=None,
         description="サブタスクツール選択ユーザープロンプト",
         examples=[
             "サブタスク: {subtask}\n\n上記のサブタスクを実行するために最適なツールを選択し、実行してください。"
         ],  # noqa: E501
     )
-    ai_agent_subtask_reflection_user_prompt: Optional[str] = Field(
+    subtask_reflection_user_prompt: Optional[str] = Field(
         default=None,
         description="サブタスクリフレクションユーザープロンプト",
         examples=[
             "サブタスク: {subtask}\nツール実行結果: {tool_result}\n\n上記の結果がサブタスクの要求を満たしているか評価してください。"  # noqa: E501
         ],  # noqa: E501
     )
-    ai_agent_subtask_retry_answer_user_prompt: Optional[str] = Field(
+    subtask_reflection_model_name: Optional[str] = Field(
+        default=None,
+        description="サブタスクリフレクションモデル名",
+        examples=["gpt-4o-2024-08-06"],
+    )
+    subtask_retry_answer_user_prompt: Optional[str] = Field(
         default=None,
         description="サブタスクリトライ回答ユーザープロンプト",
         examples=[
             "前回の試行が不十分でした。アドバイス: {advice}\n\n改善されたアプローチでサブタスクを再実行してください。"
         ],  # noqa: E501
     )
-    ai_agent_create_last_answer_system_prompt: Optional[str] = Field(
+    subtask_retry_answer_model_name: Optional[str] = Field(
+        default=None,
+        description="サブタスクリトライ回答モデル名（サブタスク回答と共通）",
+        examples=["gpt-4o-2024-08-06"],
+    )
+    final_answer_system_prompt: Optional[str] = Field(
         default=None,
         description="最終回答作成システムプロンプト",
         examples=[
             "あなたは全てのサブタスクの結果を統合し、ユーザーの質問に対する最終的な回答を作成する専門家です。"
         ],  # noqa: E501
     )
-    ai_agent_create_last_answer_user_prompt: Optional[str] = Field(
+    final_answer_user_prompt: Optional[str] = Field(
         default=None,
         description="最終回答作成ユーザープロンプト",
         examples=[
@@ -253,11 +257,11 @@ class PromptData(BaseModel):
         ...,
         description="プランナーユーザープロンプト",
     )
-    subtask_system_prompt: str = Field(
+    subtask_select_tool_system_prompt: str = Field(
         ...,
         description="サブタスクシステムプロンプト",
     )
-    subtask_tool_selection_user_prompt: str = Field(
+    subtask_select_tool_user_prompt: str = Field(
         ...,
         description="サブタスクツール選択ユーザープロンプト",
     )
@@ -269,11 +273,11 @@ class PromptData(BaseModel):
         ...,
         description="サブタスクリトライ回答ユーザープロンプト",
     )
-    create_last_answer_system_prompt: str = Field(
+    final_answer_system_prompt: str = Field(
         ...,
         description="最終回答作成システムプロンプト",
     )
-    create_last_answer_user_prompt: str = Field(
+    final_answer_user_prompt: str = Field(
         ...,
         description="最終回答作成ユーザープロンプト",
     )
@@ -432,12 +436,12 @@ app = FastAPI(
                             "prompt": {
                                 "planner_system_prompt": "あなたは優秀なプランナーです。ユーザーの質問を分析し、適切なサブタスクに分解してください。",  # noqa: E501
                                 "planner_user_prompt": "質問: {query}\n\n上記の質問に答えるために必要なサブタスクを作成してください。",  # noqa: E501
-                                "subtask_system_prompt": "あなたは与えられたサブタスクを実行する専門家です。利用可能なツールを使用してタスクを完了してください。",  # noqa: E501
-                                "subtask_tool_selection_user_prompt": "サブタスク: {subtask}\n\n上記のサブタスクを実行するために最適なツールを選択し、実行してください。",  # noqa: E501
+                                "subtask_select_tool_system_prompt": "あなたは与えられたサブタスクを実行する専門家です。利用可能なツールを使用してタスクを完了してください。",  # noqa: E501
+                                "subtask_select_tool_user_prompt": "サブタスク: {subtask}\n\n上記のサブタスクを実行するために最適なツールを選択し、実行してください。",  # noqa: E501
                                 "subtask_reflection_user_prompt": "サブタスク: {subtask}\nツール実行結果: {tool_result}\n\n上記の結果がサブタスクの要求を満たしているか評価してください。",  # noqa: E501
                                 "subtask_retry_answer_user_prompt": "前回の試行が不十分でした。アドバイス: {advice}\n\n改善されたアプローチでサブタスクを再実行してください。",  # noqa: E501
-                                "create_last_answer_system_prompt": "あなたは全てのサブタスクの結果を統合し、ユーザーの質問に対する最終的な回答を作成する専門家です。",  # noqa: E501
-                                "create_last_answer_user_prompt": "質問: {query}\nサブタスク結果: {subtask_results}\n\n上記の情報を基に、質問に対する包括的で分かりやすい回答を作成してください。",  # noqa: E501
+                                "final_answer_system_prompt": "あなたは全てのサブタスクの結果を統合し、ユーザーの質問に対する最終的な回答を作成する専門家です。",  # noqa: E501
+                                "final_answer_user_prompt": "質問: {query}\nサブタスク結果: {subtask_results}\n\n上記の情報を基に、質問に対する包括的で分かりやすい回答を作成してください。",  # noqa: E501
                             },
                             "plan": [
                                 "Pythonファイル読み込み方法の調査",
@@ -510,40 +514,7 @@ app = FastAPI(
             "description": "サーバーエラー",
             "content": {
                 "application/json": {
-                    "example": {
-                        "query": "Pythonでファイルを読み込む方法を教えてください",
-                        "answer": "",
-                        "ai_agent_result": {
-                            "prompt": {
-                                "planner_system_prompt": "あなたは優秀なプランナーです。ユーザーの質問を分析し、適切なサブタスクに分解してください。",  # noqa: E501
-                                "planner_user_prompt": "質問: {query}\n\n上記の質問に答えるために必要なサブタスクを作成してください。",  # noqa: E501
-                                "subtask_system_prompt": "あなたは与えられたサブタスクを実行する専門家です。利用可能なツールを使用してタスクを完了してください。",  # noqa: E501
-                                "subtask_tool_selection_user_prompt": "サブタスク: {subtask}\n\n上記のサブタスクを実行するために最適なツールを選択し、実行してください。",  # noqa: E501
-                                "subtask_reflection_user_prompt": "サブタスク: {subtask}\nツール実行結果: {tool_result}\n\n上記の結果がサブタスクの要求を満たしているか評価してください。",  # noqa: E501
-                                "subtask_retry_answer_user_prompt": "前回の試行が不十分でした。アドバイス: {advice}\n\n改善されたアプローチでサブタスクを再実行してください。",  # noqa: E501
-                                "create_last_answer_system_prompt": "あなたは全てのサブタスクの結果を統合し、ユーザーの質問に対する最終的な回答を作成する専門家です。",  # noqa: E501
-                                "create_last_answer_user_prompt": "質問: {query}\nサブタスク結果: {subtask_results}\n\n上記の情報を基に、質問に対する包括的で分かりやすい回答を作成してください。",  # noqa: E501
-                            },
-                            "plan": [],
-                            "subtasks_detail": [],
-                            "total_subtasks": 0,
-                            "completed_subtasks": 0,
-                            "total_challenge_count": 0,
-                        },
-                        "ragas_result": {
-                            "scores": {},
-                            "input": {
-                                "ragas_retrieved_contexts": [
-                                    "Pythonでファイルを読み込むには、open()関数を使用します。",
-                                    "with文を使用することで、ファイルを自動的に閉じることができます。",
-                                ],
-                                "ragas_reference": "Pythonでファイルを読み込むには、open()関数を使用し、with文と組み合わせることが推奨されます。",  # noqa: E501
-                            },
-                        },
-                        "langfuse_session_id": "550e8400-e29b-41d4-a716-446655440000",
-                        "execution_time": 2.15,
-                        "error": "OpenAI API connection failed",
-                    }
+                    "example": {"message": "OpenAI API connection failed"}
                 }
             },
         },
@@ -589,41 +560,37 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
     # LangfuseセッションIDを生成
     langfuse_session_id = str(uuid.uuid4())
 
-    print(request)
-
     try:
-        # 4. LLM設定
-        llm_phase_configs = LLMPhaseConfigs(
-            planner=LLMConfig(
-                model_name=request.planner_model_name or settings.planner_model_name,
-                params=(request.planner_params or settings.planner_model_params),
-            ),
-            subtask_tool_selection=LLMConfig(
-                model_name=request.subtask_tool_selection_model_name
-                or settings.subtask_tool_selection_model_name,
-                params=(
-                    request.subtask_tool_selection_model_params
-                    or settings.subtask_tool_selection_model_params
-                ),
-            ),
-            subtask_answer=LLMConfig(
-                model_name=request.subtask_answer_model_name
-                or settings.subtask_answer_model_name,
-                params=request.subtask_answer_model_params
-                or settings.subtask_answer_model_params,
-            ),
-            subtask_reflection=LLMConfig(
-                model_name=request.subtask_reflection_model_name
-                or settings.subtask_reflection_model_name,
-                params=request.subtask_reflection_model_params
-                or settings.subtask_reflection_model_params,
-            ),
-            create_last_answer=LLMConfig(
-                model_name=request.create_last_answer_model_name
-                or settings.create_last_answer_model_name,
-                params=request.create_last_answer_model_params
-                or settings.create_last_answer_model_params,
-            ),
+        # 4. AgentSettings 構築（リクエスト値が None の場合は既定にフォールバック）
+        ai_agent_settings = AgentSettings(
+            # models (first)
+            planner_model_name=request.planner_model_name,
+            planner_model_params=request.planner_model_params,
+            # prompts (planner)
+            planner_system_prompt=request.planner_system_prompt,
+            planner_user_prompt=request.planner_user_prompt,
+            # models (subtask_select_tool)
+            subtask_tool_selection_model_name=request.subtask_tool_selection_model_name,
+            subtask_tool_selection_model_params=request.subtask_tool_selection_model_params,
+            # prompts (subtask_select_tool)
+            subtask_tool_selection_system_prompt=request.subtask_tool_selection_system_prompt,
+            subtask_tool_selection_user_prompt=request.subtask_tool_selection_user_prompt,
+            # models (subtask_reflection)
+            subtask_reflection_model_params=request.subtask_reflection_model_params,
+            subtask_reflection_model_name=request.subtask_reflection_model_name,
+            # prompts (subtask_reflection)
+            subtask_reflection_user_prompt=request.subtask_reflection_user_prompt,
+            # models (subtask_retry_answer) — subtask_answer を流用
+            subtask_retry_answer_model_name=request.subtask_retry_answer_model_name,
+            subtask_retry_answer_model_params=request.subtask_retry_answer_model_params,
+            # prompts (subtask_retry_answer)
+            subtask_retry_answer_user_prompt=request.subtask_retry_answer_user_prompt,
+            # models (final_answer)
+            final_answer_model_name=request.final_answer_model_name,
+            final_answer_model_params=request.final_answer_model_params,
+            # prompts (final_answer)
+            final_answer_system_prompt=request.final_answer_system_prompt,
+            final_answer_user_prompt=request.final_answer_user_prompt,
         )
 
         # 5. ツールの準備（HybridSearchTool）
@@ -637,35 +604,7 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
         )
         ai_agent_tools = [hybrid_search_tool]
 
-        # 3. カスタムプロンプトの設定（プランナー、サブタスク、最終回答作成用）
-        ai_agent_prompts = AgentPrompts(
-            planner_system_prompt=request.ai_agent_planner_system_prompt
-            or PLANNER_SYSTEM_PROMPT,
-            planner_user_prompt=request.ai_agent_planner_user_prompt
-            or PLANNER_USER_PROMPT,
-            subtask_system_prompt=request.ai_agent_subtask_system_prompt
-            or SUBTASK_SYSTEM_PROMPT,
-            subtask_tool_selection_user_prompt=(
-                request.ai_agent_subtask_tool_selection_user_prompt
-                or SUBTASK_TOOL_EXECUTION_USER_PROMPT
-            ),
-            subtask_reflection_user_prompt=(
-                request.ai_agent_subtask_reflection_user_prompt
-                or SUBTASK_REFLECTION_USER_PROMPT
-            ),
-            subtask_retry_answer_user_prompt=(
-                request.ai_agent_subtask_retry_answer_user_prompt
-                or SUBTASK_RETRY_ANSWER_USER_PROMPT
-            ),
-            create_last_answer_system_prompt=(
-                request.ai_agent_create_last_answer_system_prompt
-                or CREATE_LAST_ANSWER_SYSTEM_PROMPT
-            ),
-            create_last_answer_user_prompt=(
-                request.ai_agent_create_last_answer_user_prompt
-                or CREATE_LAST_ANSWER_USER_PROMPT
-            ),
-        )
+        # 3. プロンプトは AgentSettings に内包済み（上記で構築）
 
         # 6. AIエージェントの実行（RAGas評価の有無に応じて分岐）
         if request.is_run_ragas:
@@ -676,9 +615,8 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
             agent_result, ragas_scores = run_ai_agent_with_rags(
                 query=request.query,
                 chat_history=request.chat_history,
-                llm_phase_configs=llm_phase_configs,
+                ai_agent_settings=ai_agent_settings,
                 ai_agent_tools=ai_agent_tools,
-                ai_agent_prompts=ai_agent_prompts,
                 langfuse_session_id=langfuse_session_id,
                 ragas_reference=request.ragas_reference,
                 ragas_metrics=ragas_metrics,
@@ -687,9 +625,8 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
             agent_result = run_ai_agent(
                 query=request.query,
                 chat_history=request.chat_history,
-                llm_phase_configs=llm_phase_configs,
+                ai_agent_settings=ai_agent_settings,
                 ai_agent_tools=ai_agent_tools,
-                ai_agent_prompts=ai_agent_prompts,
                 langfuse_session_id=langfuse_session_id,
             )
             ragas_scores = None
@@ -728,22 +665,21 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
 
         # 9. レスポンスの作成 レスポンスモデルの構築と返却
         prompt_data = PromptData(
-            planner_system_prompt=request.ai_agent_planner_system_prompt
+            planner_system_prompt=request.planner_system_prompt
             or PLANNER_SYSTEM_PROMPT,
-            planner_user_prompt=request.ai_agent_planner_user_prompt
-            or PLANNER_USER_PROMPT,
-            subtask_system_prompt=request.ai_agent_subtask_system_prompt
-            or SUBTASK_SYSTEM_PROMPT,
-            subtask_tool_selection_user_prompt=request.ai_agent_subtask_tool_selection_user_prompt  # noqa: E501
-            or SUBTASK_TOOL_EXECUTION_USER_PROMPT,
-            subtask_reflection_user_prompt=request.ai_agent_subtask_reflection_user_prompt  # noqa: E501
+            planner_user_prompt=request.planner_user_prompt or PLANNER_USER_PROMPT,
+            subtask_select_tool_system_prompt=request.subtask_tool_selection_system_prompt
+            or SUBTASK_TOOL_SELECTION_SYSTEM_PROMPT,
+            subtask_select_tool_user_prompt=request.subtask_tool_selection_user_prompt  # noqa: E501
+            or SUBTASK_TOOL_SELECTION_USER_PROMPT,
+            subtask_reflection_user_prompt=request.subtask_reflection_user_prompt  # noqa: E501
             or SUBTASK_REFLECTION_USER_PROMPT,
-            subtask_retry_answer_user_prompt=request.ai_agent_subtask_retry_answer_user_prompt  # noqa: E501
+            subtask_retry_answer_user_prompt=request.subtask_retry_answer_user_prompt  # noqa: E501
             or SUBTASK_RETRY_ANSWER_USER_PROMPT,
-            create_last_answer_system_prompt=request.ai_agent_create_last_answer_system_prompt  # noqa: E501
-            or CREATE_LAST_ANSWER_SYSTEM_PROMPT,
-            create_last_answer_user_prompt=request.ai_agent_create_last_answer_user_prompt  # noqa: E501
-            or CREATE_LAST_ANSWER_USER_PROMPT,
+            final_answer_system_prompt=request.final_answer_system_prompt  # noqa: E501
+            or FINAL_ANSWER_SYSTEM_PROMPT,
+            final_answer_user_prompt=request.final_answer_user_prompt  # noqa: E501
+            or FINAL_ANSWER_USER_PROMPT,
         )
         ai_agent_result = AIAgentResult(
             prompt=prompt_data,
@@ -771,55 +707,9 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
         )
 
     except Exception as e:
-
         print(f"Error during AI Agent execution: {e}")
-
-        execution_time = time.time() - start_time
-
-        # エラーハンドリング（例外発生時のフォールバック処理）
-        error_prompt_data = PromptData(
-            planner_system_prompt=request.ai_agent_planner_system_prompt
-            or PLANNER_SYSTEM_PROMPT,
-            planner_user_prompt=request.ai_agent_planner_user_prompt
-            or PLANNER_USER_PROMPT,
-            subtask_system_prompt=request.ai_agent_subtask_system_prompt
-            or SUBTASK_SYSTEM_PROMPT,
-            subtask_tool_selection_user_prompt=request.ai_agent_subtask_tool_selection_user_prompt  # noqa: E501
-            or SUBTASK_TOOL_EXECUTION_USER_PROMPT,
-            subtask_reflection_user_prompt=request.ai_agent_subtask_reflection_user_prompt  # noqa: E501
-            or SUBTASK_REFLECTION_USER_PROMPT,
-            subtask_retry_answer_user_prompt=request.ai_agent_subtask_retry_answer_user_prompt  # noqa: E501
-            or SUBTASK_RETRY_ANSWER_USER_PROMPT,
-            create_last_answer_system_prompt=request.ai_agent_create_last_answer_system_prompt  # noqa: E501
-            or CREATE_LAST_ANSWER_SYSTEM_PROMPT,
-            create_last_answer_user_prompt=request.ai_agent_create_last_answer_user_prompt  # noqa: E501
-            or CREATE_LAST_ANSWER_USER_PROMPT,
-        )
-        error_ai_agent_result = AIAgentResult(
-            prompt=error_prompt_data,
-            plan=[],
-            subtasks_detail=[],
-            total_subtasks=0,
-            completed_subtasks=0,
-            total_challenge_count=0,
-        )
-        error_ragas_input = RagasInput(
-            # ragas_retrieved_contexts=request.ragas_retrieved_contexts,
-            ragas_reference=request.ragas_reference,
-        )
-        error_ragas_result = RagasResult(
-            scores={},
-            input=error_ragas_input,
-        )
-        return AIAgentResponse(
-            query=request.query,
-            answer="",
-            ai_agent_result=error_ai_agent_result,
-            ragas_result=error_ragas_result,
-            langfuse_session_id=langfuse_session_id,
-            execution_time=execution_time,
-            error=str(e),
-        )
+        # 期待仕様: { "message": e.message } を返却（Python3では str(e) を使用）
+        return JSONResponse(status_code=500, content={"message": str(e)})
 
 
 def _normalize_ragas_scores(raw: Any) -> dict:

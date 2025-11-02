@@ -62,17 +62,17 @@ ai_agent_planner_system_prompt: |
   [改善されたプランナーシステムプロンプト]
 ai_agent_planner_user_prompt: |
   [改善されたプランナーユーザープロンプト]
-ai_agent_subtask_system_prompt: |
+ai_agent_subtask_select_tool_system_prompt: |
   [改善されたサブタスクシステムプロンプト]
-ai_agent_subtask_tool_selection_user_prompt: |
+ai_agent_subtask_select_tool_user_prompt: |
   [改善されたツール選択プロンプト]
 ai_agent_subtask_reflection_user_prompt: |
   [改善されたリフレクションプロンプト]
 ai_agent_subtask_retry_answer_user_prompt: |
   [改善されたリトライプロンプト]
-ai_agent_create_last_answer_system_prompt: |
+ai_agent_final_answer_system_prompt: |
   [改善された最終回答システムプロンプト]
-ai_agent_create_last_answer_user_prompt: |
+ai_agent_final_answer_user_prompt: |
   [改善された最終回答ユーザープロンプト]
 ```
 

@@ -62,11 +62,11 @@ def call_ai_agent_api(
         "ai_agent_planner_user_prompt": current_prompts.get(
             "ai_agent_planner_user_prompt", ""
         ),
-        "ai_agent_subtask_system_prompt": current_prompts.get(
-            "ai_agent_subtask_system_prompt", ""
+        "ai_agent_subtask_select_tool_system_prompt": current_prompts.get(
+            "ai_agent_subtask_select_tool_system_prompt", ""
         ),
-        "ai_agent_subtask_tool_selection_user_prompt": current_prompts.get(
-            "ai_agent_subtask_tool_selection_user_prompt", ""
+        "ai_agent_subtask_select_tool_user_prompt": current_prompts.get(
+            "ai_agent_subtask_select_tool_user_prompt", ""
         ),
         "ai_agent_subtask_reflection_user_prompt": current_prompts.get(
             "ai_agent_subtask_reflection_user_prompt", ""
@@ -74,11 +74,11 @@ def call_ai_agent_api(
         "ai_agent_subtask_retry_answer_user_prompt": current_prompts.get(
             "ai_agent_subtask_retry_answer_user_prompt", ""
         ),
-        "ai_agent_create_last_answer_system_prompt": current_prompts.get(
-            "ai_agent_create_last_answer_system_prompt", ""
+        "ai_agent_final_answer_system_prompt": current_prompts.get(
+            "ai_agent_final_answer_system_prompt", ""
         ),
-        "ai_agent_create_last_answer_user_prompt": current_prompts.get(
-            "ai_agent_create_last_answer_user_prompt", ""
+        "ai_agent_final_answer_user_prompt": current_prompts.get(
+            "ai_agent_final_answer_user_prompt", ""
         ),
         "is_run_ragas": True,
         "ragas_reference": ragas_reference,

@@ -155,8 +155,8 @@ def main():
         subtask_reflection_model_name = st.text_input(
             "subtask_reflection_model_name", value=DEFAULT_SUBTASK_REFLECTION_MODEL
         )
-        create_last_answer_model_name = st.text_input(
-            "create_last_answer_model_name", value=DEFAULT_FINAL_ANSWER_MODEL
+        final_answer_model_name = st.text_input(
+            "final_answer_model_name", value=DEFAULT_FINAL_ANSWER_MODEL
         )
 
         st.subheader("モデルパラメータ(JSON) (未入力はNone)")
@@ -172,24 +172,25 @@ def main():
         subtask_reflection_model_params_raw = st.text_area(
             "subtask_reflection_model_params", height=PARAMS_TEXTAREA_HEIGHT
         )
-        create_last_answer_model_params_raw = st.text_area(
-            "create_last_answer_model_params", height=PARAMS_TEXTAREA_HEIGHT
+        final_answer_model_params_raw = st.text_area(
+            "final_answer_model_params", height=PARAMS_TEXTAREA_HEIGHT
         )
 
         st.subheader("プロンプト上書き (未入力は既定)")
         with st.expander("Planner prompts"):
             ai_agent_planner_system_prompt = st.text_area(
-                "ai_agent_planner_system_prompt", height=PROMPT_TEXTAREA_HEIGHT
+                "planner_system_prompt", height=PROMPT_TEXTAREA_HEIGHT
             )
             ai_agent_planner_user_prompt = st.text_area(
-                "ai_agent_planner_user_prompt", height=PROMPT_TEXTAREA_HEIGHT
+                "planner_user_prompt", height=PROMPT_TEXTAREA_HEIGHT
             )
         with st.expander("Subtask prompts"):
-            ai_agent_subtask_system_prompt = st.text_area(
-                "ai_agent_subtask_system_prompt", height=PROMPT_TEXTAREA_HEIGHT
+            ai_agent_subtask_select_tool_system_prompt = st.text_area(
+                "subtask_tool_selection_system_prompt",
+                height=PROMPT_TEXTAREA_HEIGHT,
             )
-            ai_agent_subtask_tool_selection_user_prompt = st.text_area(
-                "ai_agent_subtask_tool_selection_user_prompt",
+            ai_agent_subtask_select_tool_user_prompt = st.text_area(
+                "subtask_tool_selection_user_prompt",
                 height=PROMPT_TEXTAREA_HEIGHT,
             )
             ai_agent_subtask_reflection_user_prompt = st.text_area(
@@ -200,12 +201,12 @@ def main():
                 height=PROMPT_TEXTAREA_HEIGHT,
             )
         with st.expander("Final answer prompts"):
-            ai_agent_create_last_answer_system_prompt = st.text_area(
-                "ai_agent_create_last_answer_system_prompt",
+            ai_agent_final_answer_system_prompt = st.text_area(
+                "final_answer_system_prompt",
                 height=PROMPT_TEXTAREA_HEIGHT,
             )
-            ai_agent_create_last_answer_user_prompt = st.text_area(
-                "ai_agent_create_last_answer_user_prompt", height=PROMPT_TEXTAREA_HEIGHT
+            ai_agent_final_answer_user_prompt = st.text_area(
+                "final_answer_user_prompt", height=PROMPT_TEXTAREA_HEIGHT
             )
 
     st.title("🤖 Chatbot AI Agent")
@@ -311,8 +312,8 @@ def main():
         subtask_reflection_model_params = parse_json_or_none(
             "subtask_reflection_model_params", subtask_reflection_model_params_raw
         )
-        create_last_answer_model_params = parse_json_or_none(
-            "create_last_answer_model_params", create_last_answer_model_params_raw
+        final_answer_model_params = parse_json_or_none(
+            "final_answer_model_params", final_answer_model_params_raw
         )
 
         def nvl(s: str) -> Optional[str]:
@@ -336,30 +337,30 @@ def main():
             "subtask_tool_selection_model_name": nvl(subtask_tool_selection_model_name),
             "subtask_answer_model_name": nvl(subtask_answer_model_name),
             "subtask_reflection_model_name": nvl(subtask_reflection_model_name),
-            "create_last_answer_model_name": nvl(create_last_answer_model_name),
+            "final_answer_model_name": nvl(final_answer_model_name),
             "planner_params": planner_params,
             "subtask_tool_selection_model_params": subtask_tool_selection_model_params,
             "subtask_answer_model_params": subtask_answer_model_params,
             "subtask_reflection_model_params": subtask_reflection_model_params,
-            "create_last_answer_model_params": create_last_answer_model_params,
-            "ai_agent_planner_system_prompt": nvl(ai_agent_planner_system_prompt),
-            "ai_agent_planner_user_prompt": nvl(ai_agent_planner_user_prompt),
-            "ai_agent_subtask_system_prompt": nvl(ai_agent_subtask_system_prompt),
-            "ai_agent_subtask_tool_selection_user_prompt": nvl(
-                ai_agent_subtask_tool_selection_user_prompt
+            "final_answer_model_params": final_answer_model_params,
+            "planner_system_prompt": nvl(ai_agent_planner_system_prompt),
+            "planner_user_prompt": nvl(ai_agent_planner_user_prompt),
+            "subtask_tool_selection_system_prompt": nvl(
+                ai_agent_subtask_select_tool_system_prompt
             ),
-            "ai_agent_subtask_reflection_user_prompt": nvl(
+            "subtask_tool_selection_user_prompt": nvl(
+                ai_agent_subtask_select_tool_user_prompt
+            ),
+            "subtask_reflection_user_prompt": nvl(
                 ai_agent_subtask_reflection_user_prompt
             ),
-            "ai_agent_subtask_retry_answer_user_prompt": nvl(
+            "subtask_retry_answer_user_prompt": nvl(
                 ai_agent_subtask_retry_answer_user_prompt
             ),
-            "ai_agent_create_last_answer_system_prompt": nvl(
-                ai_agent_create_last_answer_system_prompt
+            "final_answer_system_prompt": nvl(
+                ai_agent_final_answer_system_prompt
             ),
-            "ai_agent_create_last_answer_user_prompt": nvl(
-                ai_agent_create_last_answer_user_prompt
-            ),
+            "final_answer_user_prompt": nvl(ai_agent_final_answer_user_prompt),
             # チェックボックスの値をそのまま渡す（事前に参照の必須チェック済み）
             "is_run_ragas": is_run_ragas,
             "ragas_reference": ragas_ref_trim if ragas_ref_trim else None,
