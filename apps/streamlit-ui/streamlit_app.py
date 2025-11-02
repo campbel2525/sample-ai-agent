@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 import streamlit as st
+from streamlit.components.v1 import html as st_html
 
 # =============================
 # 定数（上部に集約）
@@ -164,28 +165,47 @@ def main():
                 with st.chat_message("assistant"):
                     st.markdown(asst_text)
                     if detail:
-                        with st.expander("詳細結果 (plan, subtasks, RAGas, Langfuse)"):
-                            if "latency_sec" in detail:
-                                st.write({"latency_sec": detail["latency_sec"]})
-                            if "plan" in detail and detail["plan"] is not None:
-                                st.subheader("Plan")
-                                st.write(detail["plan"])
-                            if "subtasks" in detail and detail["subtasks"] is not None:
-                                st.subheader("Subtasks")
-                                st.write(detail["subtasks"])
-                            if "ragas_scores" in detail:
-                                st.subheader("RAGas scores")
-                                st.write(detail.get("ragas_scores", {}))
-                            if "langfuse_session_id" in detail and detail["langfuse_session_id"]:
-                                st.subheader("Langfuse session id")
-                                st.code(str(detail["langfuse_session_id"]))
+                        # フルAPIレスポンスを表示
+                        raw_resp = detail.get("raw_response")
+                        if raw_resp is not None:
+                            with st.expander("APIレスポンス（raw）"):
+                                st.json(raw_resp)
+                        # 参考：レイテンシ等の軽量メタ
+                        if "latency_sec" in detail:
+                            st.caption(f"latency: {detail['latency_sec']}s")
     else:
         for m in st.session_state.messages:
             with st.chat_message(m["role"]):
                 st.markdown(m["content"])
 
-    user_input = st.chat_input("メッセージを入力...")
-    if user_input:
+    with st.form("chat_form", clear_on_submit=True):
+        chat_value = st.text_area("", key="chat_input_area", height=100, placeholder="メッセージを入力… (送信: ⌘+Enter)" )
+        submitted = st.form_submit_button("送信", type="primary")
+
+    # Cmd/Ctrl+Enter で送信ボタンをクリックするJS（簡易）
+    st_html(
+        """
+        <script>
+        (function(){
+          function clickSend(){
+            const btns = parent.document.querySelectorAll('button');
+            for(let i=btns.length-1;i>=0;i--){
+              const t = (btns[i].innerText||'').trim();
+              if(t === '送信'){ btns[i].click(); break; }
+            }
+          }
+          window.addEventListener('keydown', function(e){
+            if ((e.metaKey||e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); clickSend(); }
+          }, true);
+        })();
+        </script>
+        """,
+        height=0,
+    )
+
+    user_input: Optional[str] = None
+    if submitted and chat_value and chat_value.strip():
+        user_input = chat_value.strip()
         # 送信: 直前までの履歴をchat_historyに
         st.session_state.messages.append({"role": "user", "content": user_input})
         # 直近のユーザー入力は即時表示（次回リロード待ちにしない）
@@ -282,27 +302,18 @@ def main():
                             {"role": "assistant", "content": answer}
                         )
 
-                        with st.expander("詳細結果 (plan, subtasks, RAGas, Langfuse)"):
-                            latency_sec = round(latency, 2)
-                            st.write({"latency_sec": latency_sec})
-                            plan = (data.get("ai_agent_result") or {}).get("plan")
-                            if plan:
-                                st.subheader("Plan")
-                                st.write(plan)
-                            subtasks = (data.get("ai_agent_result") or {}).get(
-                                "subtasks_detail"
-                            )
-                            if subtasks:
-                                st.subheader("Subtasks")
-                                st.write(subtasks)
-                            ragas_scores = (data.get("ragas_result") or {}).get(
-                                "scores"
-                            )
-                            st.subheader("RAGas scores")
-                            st.write(ragas_scores)
-                            sid = data.get("langfuse_session_id")
-                            st.subheader("Langfuse session id")
-                            st.code(sid)
+                        # フルAPIレスポンスを表示
+                        with st.expander("APIレスポンス（raw）"):
+                            st.json(data)
+
+                        # 参考用に最低限のメタも保持
+                        latency_sec = round(latency, 2)
+                        plan = (data.get("ai_agent_result") or {}).get("plan")
+                        subtasks = (data.get("ai_agent_result") or {}).get(
+                            "subtasks_detail"
+                        )
+                        ragas_scores = (data.get("ragas_result") or {}).get("scores")
+                        sid = data.get("langfuse_session_id")
 
                         # ターン詳細を履歴に保存（次回以降の再描画でも保持）
                         st.session_state.turns.append(
@@ -310,7 +321,8 @@ def main():
                                 "user": user_input,
                                 "assistant": answer,
                                 "detail": {
-                                    "latency_sec": round(latency, 2),
+                                    "latency_sec": latency_sec,
+                                    "raw_response": data,
                                     "plan": plan,
                                     "subtasks": subtasks,
                                     "ragas_scores": ragas_scores or {},

@@ -11,6 +11,9 @@ init: ## 開発作成
 	docker compose -f $(pf) -p $(pn) exec -it tuning-ai-agent pipenv install --dev
 	docker compose -f $(pf) -p $(pn) exec -it streamlit-ui pipenv install --dev
 
+opensearch-setup:
+	docker compose -f $(pf) -p $(pn) exec -it ai-agent pipenv run python scripts/opensearch_setup.py
+
 # cp-env: ## .envファイルのコピー
 # 	cp apps/ai_agent/.env.example.example apps/ai_agent/.env
 # 	cp apps/tuning_ai_agent/.env.example apps/tuning_ai_agent/.env
@@ -45,8 +48,6 @@ check: ## コードのフォーマット
 ai-agent-run:
 	docker compose -f $(pf) -p $(pn) exec -it ai-agent pipenv run uvicorn run_fastapi:app --reload --host 0.0.0.0 --port 8000
 
-streamlit-ui-up: ## streamlit-ui を起動（SPでポート指定）
-	STREAMLIT_PORT=8501 docker compose -f $(pf) -p $(pn) up -d streamlit-ui
 
 streamlit-ui-run: ## streamlitを起動（コンテナ内コマンド、--server.portに合わせる）
 	docker compose -f $(pf) -p $(pn) exec -it streamlit-ui pipenv run streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 8501
