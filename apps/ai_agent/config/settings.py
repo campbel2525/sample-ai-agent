@@ -33,5 +33,5 @@ class Settings(BaseSettings):
     langfuse_secret_key: str = ""
     langfuse_host: str = ""
 
-    # 開発
+    # 開発用途
     debugpy_port: int = 0  # デバッグ用ポート
