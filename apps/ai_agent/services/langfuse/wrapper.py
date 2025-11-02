@@ -4,7 +4,7 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from ai_agents.agents.general_purpose_ai_agent.agent import Agent
 from ai_agents.agents.general_purpose_ai_agent.models import AgentResult
-from ai_agents.langfuse.tracer import LangfuseTracer
+from services.langfuse.tracer import LangfuseTracer
 from config.custom_logger import setup_logger
 
 logger = setup_logger(__file__)
@@ -21,8 +21,8 @@ def run_agent_with_langfuse(
     langfuse_user_id: Optional[int] = None,
     langfuse_trace_name: str = "ai_agent_execution",
 ) -> AgentResult:
-    """エージェントをLangfuseトレーシング付きで実行する
-
+    """
+    エージェントをLangfuseトレーシング付きで実行する
     Args:
         agent (Agent): 純粋なエージェントインスタンス
         question (str): 入力の質問

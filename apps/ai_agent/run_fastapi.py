@@ -36,20 +36,22 @@ class AIAgentRequest(BaseModel):
         examples=["Pythonでファイルを読み込む方法を教えてください"],
     )
     chat_history: list[ChatCompletionMessageParam] = Field(
-        default=[],
+        default_factory=list,
         description="チャット履歴",
-        examples=[
-            {
-                "role": "user",
-                "content": "Pythonについて教えて",
-                "timestamp": "2025-01-17T10:00:00Z",
-            },
-            {
-                "role": "assistant",
-                "content": "Pythonは汎用プログラミング言語です。",
-                "timestamp": "2025-01-17T10:00:30Z",
-            },
-        ],
+        json_schema_extra={
+            "example": [
+                {
+                    "role": "user",
+                    "content": "Pythonについて教えて",
+                    "timestamp": "2025-01-17T10:00:00Z",
+                },
+                {
+                    "role": "assistant",
+                    "content": "Pythonは汎用プログラミング言語です。",
+                    "timestamp": "2025-01-17T10:00:30Z",
+                },
+            ]
+        },
     )
 
     # LLMPhaseConfigs関連パラメータ（nullable）
@@ -362,57 +364,6 @@ class RagasResult(BaseModel):
     )
 
 
-class InputData(BaseModel):
-    """
-    入力データ
-    """
-
-    question: str = Field(
-        ...,
-        description="ユーザーの質問",
-    )
-    ai_agent_planner_system_prompt: str = Field(
-        ...,
-        description="プランナーシステムプロンプト",
-    )
-    ai_agent_planner_user_prompt: str = Field(
-        ...,
-        description="プランナーユーザープロンプト",
-    )
-    ai_agent_subtask_system_prompt: str = Field(
-        ...,
-        description="サブタスクシステムプロンプト",
-    )
-    ai_agent_subtask_tool_selection_user_prompt: str = Field(
-        ...,
-        description="サブタスクツール選択ユーザープロンプト",
-    )
-    ai_agent_subtask_reflection_user_prompt: str = Field(
-        ...,
-        description="サブタスクリフレクションユーザープロンプト",
-    )
-    ai_agent_subtask_retry_answer_user_prompt: str = Field(
-        ...,
-        description="サブタスクリトライ回答ユーザープロンプト",
-    )
-    ai_agent_create_last_answer_system_prompt: str = Field(
-        ...,
-        description="最終回答作成システムプロンプト",
-    )
-    ai_agent_create_last_answer_user_prompt: str = Field(
-        ...,
-        description="最終回答作成ユーザープロンプト",
-    )
-    is_run_ragas: bool = Field(..., description="RAGas評価を実行するかどうか")
-    # ragas_retrieved_contexts: Optional[List[str]] = Field(
-    #     default=None, description="検索された文脈"
-    # )
-    ragas_reference: Optional[str] = Field(
-        default=None,
-        description="正しい回答",
-    )
-
-
 class AIAgentResponse(BaseModel):
     """
     AI Agentの実行レスポンスモデル
@@ -449,155 +400,6 @@ class AIAgentResponse(BaseModel):
     )
 
     # 実行情報
-    execution_time: Optional[float] = Field(
-        default=None,
-        description="実行時間（秒）",
-        examples=[12.34],
-    )
-    error: Optional[str] = Field(
-        default=None,
-        description="エラーメッセージ",
-        examples=[None],
-    )
-
-
-class ChatMessage(BaseModel):
-    """
-    チャットメッセージ
-    """
-
-    role: str = Field(
-        ...,
-        description="メッセージの役割",
-        examples=["user"],
-    )
-    content: str = Field(
-        ...,
-        description="メッセージの内容",
-        examples=["こんにちは"],
-    )
-    timestamp: Optional[str] = Field(
-        default=None,
-        description="タイムスタンプ",
-        examples=["2025-01-17T10:00:00Z"],
-    )
-
-
-class ChatRequest(BaseModel):
-    """
-    チャット用リクエストモデル
-    """
-
-    current_question: str = Field(
-        ...,
-        description="現在の質問",
-        examples=["それについてもう少し詳しく教えて"],
-    )
-    chat_history: List[ChatMessage] = Field(
-        default=[],
-        description="チャット履歴",
-        examples=[
-            {
-                "role": "user",
-                "content": "Pythonについて教えて",
-                "timestamp": "2025-01-17T10:00:00Z",
-            },
-            {
-                "role": "assistant",
-                "content": "Pythonは汎用プログラミング言語です。",
-                "timestamp": "2025-01-17T10:00:30Z",
-            },
-        ],
-    )
-
-    # AIエージェントプロンプト設定パラメータ（nullable）
-    ai_agent_planner_system_prompt: Optional[str] = Field(
-        default=None,
-        description="プランナーシステムプロンプト",
-        examples=[
-            "あなたは優秀なプランナーです。ユーザーの質問を分析し、適切なサブタスクに分解してください。"
-        ],
-    )
-    ai_agent_planner_user_prompt: Optional[str] = Field(
-        default=None,
-        description="プランナーユーザープロンプト",
-        examples=["# チャット履歴\n{chat_history}\n\n# 現在の質問\n{question}"],
-    )
-    ai_agent_subtask_system_prompt: Optional[str] = Field(
-        default=None,
-        description="サブタスクシステムプロンプト",
-        examples=[
-            "あなたは与えられたサブタスクを実行する専門家です。利用可能なツールを使用してタスクを完了してください。"
-        ],
-    )
-    ai_agent_subtask_tool_selection_user_prompt: Optional[str] = Field(
-        default=None,
-        description="サブタスクツール選択ユーザープロンプト",
-        examples=[
-            "サブタスク: {subtask}\n\n上記のサブタスクを実行するために最適なツールを選択し、実行してください。"
-        ],
-    )
-    ai_agent_subtask_reflection_user_prompt: Optional[str] = Field(
-        default=None,
-        description="サブタスクリフレクションユーザープロンプト",
-        examples=[
-            "サブタスク: {subtask}\nツール実行結果: {tool_result}\n\n上記の結果がサブタスクの要求を満たしているか評価してください。"  # noqa: E501
-        ],  # noqa: E501
-    )
-    ai_agent_subtask_retry_answer_user_prompt: Optional[str] = Field(
-        default=None,
-        description="サブタスクリトライ回答ユーザープロンプト",
-        examples=[
-            "前回の試行が不十分でした。アドバイス: {advice}\n\n改善されたアプローチでサブタスクを再実行してください。"
-        ],
-    )
-    ai_agent_create_last_answer_system_prompt: Optional[str] = Field(
-        default=None,
-        description="最終回答作成システムプロンプト",
-        examples=[
-            "あなたは全てのサブタスクの結果を統合し、ユーザーの質問に対する最終的な回答を作成する専門家です。"
-        ],
-    )
-    ai_agent_create_last_answer_user_prompt: Optional[str] = Field(
-        default=None,
-        description="最終回答作成ユーザープロンプト",
-        examples=[
-            "質問: {question}\nサブタスク結果: {subtask_results}\n\n上記の情報を基に、質問に対する包括的で分かりやすい回答を作成してください。"  # noqa: E501
-        ],  # noqa: E501
-    )
-
-
-class ChatResponse(BaseModel):
-    """
-    チャット用レスポンスモデル
-    """
-
-    response_type: str = Field(
-        ...,
-        description="レスポンスタイプ",
-        examples=["answer"],  # "answer" または "clarification"
-    )
-    content: str = Field(
-        ...,
-        description="回答内容または追い質問",
-        examples=[
-            "Pythonでファイルを読み込むには、主に以下の方法があります..."
-        ],  # noqa: E501
-    )
-    needs_clarification: bool = Field(
-        ...,
-        description="追い質問が必要かどうか",
-        examples=[False],
-    )
-    ai_agent_result: Optional[AIAgentResult] = Field(
-        default=None,
-        description="AI Agentの実行結果（answerの場合のみ）",
-    )
-    langfuse_session_id: str = Field(
-        ...,
-        description="LangfuseセッションID",
-        examples=["550e8400-e29b-41d4-a716-446655440000"],
-    )
     execution_time: Optional[float] = Field(
         default=None,
         description="実行時間（秒）",
@@ -869,6 +671,8 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
         )
 
         # 6. AIエージェントの実行（RAGas評価の有無に応じて分岐）
+        print(request)
+
         if request.is_run_ragas:
             ragas_metrics = [
                 answer_relevancy,  # 質問との関連性

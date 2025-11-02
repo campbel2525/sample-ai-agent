@@ -288,9 +288,6 @@ def main():
     # 送信処理（フォームはページ最下部に1つだけ）。即時APIは叩かずpayloadを保存→再描画の先頭で処理
     if submitted and chat_value and chat_value.strip():
         user_input: str = chat_value.strip()
-        # 先にユーザーの発話を会話に追加
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        chat_history = to_chat_history(st.session_state.messages[:-1])
 
         # JSONパラメータの解析
         planner_params = parse_json_or_none("planner_params", planner_params_raw)
@@ -310,8 +307,16 @@ def main():
         def nvl(s: str) -> Optional[str]:
             return s if s else None
 
+        # RAGas 実行可否と参照の整形
         ragas_ref_trim = (ragas_reference or "").strip()
-        ragas_enabled = bool(is_run_ragas and ragas_ref_trim)
+        # チェックが入っているのに参照が空なら、APIバリデーションで422になるため事前に警告して送信しない
+        if is_run_ragas and not ragas_ref_trim:
+            st.warning("RAGasを実行するには 'RAGas reference' の入力が必要です。")
+            return
+
+        # 送信可となった段階でユーザー発話を履歴に追加し、履歴を作成
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        chat_history = to_chat_history(st.session_state.messages[:-1])
 
         payload: Dict[str, Any] = {
             "question": user_input,
@@ -344,8 +349,9 @@ def main():
             "ai_agent_create_last_answer_user_prompt": nvl(
                 ai_agent_create_last_answer_user_prompt
             ),
-            "is_run_ragas": ragas_enabled,
-            "ragas_reference": ragas_ref_trim if ragas_enabled else None,
+            # チェックボックスの値をそのまま渡す（事前に参照の必須チェック済み）
+            "is_run_ragas": is_run_ragas,
+            "ragas_reference": ragas_ref_trim if ragas_ref_trim else None,
         }
 
         st.session_state["pending_payload"] = payload

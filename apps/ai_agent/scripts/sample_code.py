@@ -15,7 +15,7 @@ from langchain.tools import BaseTool
 from ai_agents.agents.general_purpose_ai_agent.agent import Agent
 from ai_agents.agents.general_purpose_ai_agent.models import LLMPhaseConfigs
 from ai_agents.agents.general_purpose_ai_agent.prompts import AgentPrompts
-from ai_agents.langfuse.wrapper import run_agent_with_langfuse
+from services.langfuse.wrapper import run_agent_with_langfuse
 from ai_agents.tools.hybrid_search_tool import HybridSearchTool
 from ai_agents.tools.random_tool import RandomTool
 from config.settings import Settings

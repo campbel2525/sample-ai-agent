@@ -15,7 +15,7 @@ from ai_agents.agents.general_purpose_ai_agent.models import (
     AgentResult,
     LLMPhaseConfigs,
 )
-from ai_agents.langfuse.wrapper import run_agent_with_langfuse
+from services.langfuse.wrapper import run_agent_with_langfuse
 from config.settings import Settings
 from services.openai_service import get_embedding_client, get_openai_client
 
