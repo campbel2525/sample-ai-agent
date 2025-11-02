@@ -227,13 +227,33 @@ def main():
             with st.chat_message(m["role"]):
                 st.markdown(m["content"])
 
-    # 入力欄（ページ最下部）
+    # 入力欄（チャットの直下に配置・画面最下部に固定）
+    # StreamlitはHTMLのネストを維持しないため、stFormを直接固定化するCSSを適用
+    st.markdown(
+        """
+        <style>
+        :root { --footer-height: 140px; }
+        /* 本文がフッターで隠れないように下余白 */
+        section.main > div.block-container { padding-bottom: var(--footer-height); }
+        /* ページ内のstFormを固定フッター化（このアプリでは1つのみ） */
+        section.main div[data-testid="stForm"] {
+          position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000;
+          padding: 10px 16px; background: var(--footer-bg, rgba(255,255,255,0.97));
+          box-shadow: 0 -2px 10px rgba(0,0,0,0.12);
+        }
+        /* 中身を中央寄せ（コンテンツ幅と揃えるための控えめな最大幅） */
+        section.main div[data-testid="stForm"] > div { max-width: 1000px; margin: 0 auto; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
     with st.form("chat_form", clear_on_submit=True):
         chat_value = st.text_area(
             "",
             key="chat_input_area",
             height=100,
             placeholder="メッセージを入力… (送信: ⌘/Ctrl + Enter)",
+            label_visibility="collapsed",
         )
         submitted = st.form_submit_button("送信", type="primary")
 
@@ -242,6 +262,13 @@ def main():
         """
         <script>
         (function(){
+          // 背景色をテーマに合わせる
+          try{
+            const bg = getComputedStyle(parent.document.body).backgroundColor;
+            const forms = parent.document.querySelectorAll('section.main div[data-testid="stForm"]');
+            forms.forEach(f => f.style.background = bg);
+          }catch(_){ }
+
           function clickSend(){
             const btns = parent.document.querySelectorAll('button');
             for(let i=btns.length-1;i>=0;i--){
