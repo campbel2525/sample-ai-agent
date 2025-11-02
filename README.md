@@ -153,12 +153,12 @@ AI エージェント API のテストの方法
   "subtask_tool_selection_model_name": "gpt-4o-2024-08-06",
   "subtask_answer_model_name": "gpt-4o-2024-08-06",
   "subtask_reflection_model_name": "gpt-4o-2024-08-06",
-  "final_answer_model_name": "gpt-4o-2024-08-06",
+  "create_last_answer_model_name": "gpt-4o-2024-08-06",
   "planner_params": null,
-  "subtask_tool_selection_params": null,
-  "subtask_answer_params": null,
-  "subtask_reflection_params": null,
-  "final_answer_params": null,
+  "subtask_tool_selection_model_params": null,
+  "subtask_answer_model_params": null,
+  "subtask_reflection_model_params": null,
+  "create_last_answer_model_params": null,
   "ai_agent_planner_system_prompt": null,
   "ai_agent_planner_user_prompt": null,
   "ai_agent_subtask_system_prompt": null,
@@ -267,9 +267,13 @@ OpenSearch には「キアヌリーブス」についての情報が入ってい
 
 ユーザー: キアヌリーブスの生い立ちについて知りたい
 
-チャットボット: キアヌ・リーブスは 1964 年 9 月 2 日にレバノンで生まれ、カナダのトロントで育ちました。彼の父はハワイ出身のアメリカ人地質学者で、母はイングランド人の元ダンサーでデザイナーです。幼少期は母親の再婚相手と共に世界各地を転々とし、主にトロントで育ちました。彼は 5 年間で 4 つの高校に通いましたが、最終的に高校を卒業することはありませんでした。
+チャットボット: キアヌ・リーブスは 1964 年 9 月 2 日にレバノンで生まれ、カナダのトロントで育ちました。彼の父はハワイ出身のアメリカ人地質学者で、母はイングランド人の元ダンサーでデザイナーです。幼少期は世界各地を転々とし、最終的にトロントで育ちました。彼は 5 年間で 4 つの高校に通い、アイスホッケーで優れた能力を発揮しましたが、怪我によりその道を断念しました。9 歳で演劇に出演し、1986 年に映画デビューを果たしました。
 
 ### ケース 2
+
+ユーザー:
+
+### ケース 3
 
 1 回目の質問が曖昧のためチャットボットは追い質問をしていることを確認。
 

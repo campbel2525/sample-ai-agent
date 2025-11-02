@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "python",
+      "name": "ai_agent",
       "type": "python",
       "request": "attach",
       "port": 9002,
@@ -15,7 +15,7 @@
       ]
     },
     {
-      "name": "python",
+      "name": "tuning_ai_agent",
       "type": "python",
       "request": "attach",
       "port": 9003,

@@ -75,7 +75,7 @@ class AIAgentRequest(BaseModel):
         description="サブタスクリフレクションモデル名",
         examples=["gpt-4o-2024-08-06"],
     )
-    final_answer_model_name: Optional[str] = Field(
+    create_last_answer_model_name: Optional[str] = Field(
         default=None,
         description="最終回答モデル名",
         examples=["gpt-4o-2024-08-06"],
@@ -85,22 +85,22 @@ class AIAgentRequest(BaseModel):
         description="プランナーモデルパラメータ",
         examples=[{"temperature": 0.7, "max_tokens": 1000}],
     )
-    subtask_tool_selection_params: Optional[dict] = Field(
+    subtask_tool_selection_model_params: Optional[dict] = Field(
         default=None,
         description="サブタスクツール選択モデルパラメータ",
         examples=[{"temperature": 0.7, "max_tokens": 1000}],
     )
-    subtask_answer_params: Optional[dict] = Field(
+    subtask_answer_model_params: Optional[dict] = Field(
         default=None,
         description="サブタスク回答モデルパラメータ",
         examples=[{"temperature": 0.7, "max_tokens": 1000}],
     )
-    subtask_reflection_params: Optional[dict] = Field(
+    subtask_reflection_model_params: Optional[dict] = Field(
         default=None,
         description="サブタスクリフレクションモデルパラメータ",
         examples=[{"temperature": 0.7, "max_tokens": 1000}],
     )
-    final_answer_params: Optional[dict] = Field(
+    create_last_answer_model_params: Optional[dict] = Field(
         default=None,
         description="最終回答モデルパラメータ",
         examples=[{"temperature": 0.7, "max_tokens": 1000}],
@@ -412,18 +412,6 @@ class AIAgentResponse(BaseModel):
     )
 
 
-def _mk_cfg(
-    name_opt: Optional[str],
-    params_opt: Optional[dict],
-    settings: Settings,
-) -> LLMConfig:
-    # name/params が None のときは Settings のデフォルトを使う
-    return LLMConfig(
-        model_name=name_opt or settings.ai_agent_default_model_name,
-        params=(params_opt or settings.ai_agent_default_model_params),
-    )
-
-
 app = FastAPI(
     title="AI Agents API", description="AI Agents API with FastAPI", version="1.0.0"
 )
@@ -573,9 +561,9 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
     4. LLM設定
     5. ツールの準備（HybridSearchTool）
     6. AIエージェントの実行（RAGas評価の有無に応じて分岐）
-    7. 実行結果の詳細情報構築（サブタスク詳細、統計情報）
-    8. RAGasスコアの辞書形式変換
-    9. レスポンスモデルの構築と返却
+    7. レスポンスの作成 実行結果の詳細情報構築（サブタスク詳細、統計情報）
+    8. レスポンスの作成 RAGasスコアの辞書形式変換
+    9. レスポンスの作成 レスポンスモデルの構築と返却
 
     ## レスポンス例
 
@@ -601,31 +589,40 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
     # LangfuseセッションIDを生成
     langfuse_session_id = str(uuid.uuid4())
 
+    print(request)
+
     try:
         # 4. LLM設定
         llm_phase_configs = LLMPhaseConfigs(
-            planner=_mk_cfg(
-                request.planner_model_name, request.planner_params, settings
+            planner=LLMConfig(
+                model_name=request.planner_model_name or settings.planner_model_name,
+                params=(request.planner_params or settings.planner_model_params),
             ),
-            subtask_tool_selection=_mk_cfg(
-                request.subtask_tool_selection_model_name,
-                request.subtask_tool_selection_params,
-                settings,
+            subtask_tool_selection=LLMConfig(
+                model_name=request.subtask_tool_selection_model_name
+                or settings.subtask_tool_selection_model_name,
+                params=(
+                    request.subtask_tool_selection_model_params
+                    or settings.subtask_tool_selection_model_params
+                ),
             ),
-            subtask_answer=_mk_cfg(
-                request.subtask_answer_model_name,
-                request.subtask_answer_params,
-                settings,
+            subtask_answer=LLMConfig(
+                model_name=request.subtask_answer_model_name
+                or settings.subtask_answer_model_name,
+                params=request.subtask_answer_model_params
+                or settings.subtask_answer_model_params,
             ),
-            subtask_reflection=_mk_cfg(
-                request.subtask_reflection_model_name,
-                request.subtask_reflection_params,
-                settings,
+            subtask_reflection=LLMConfig(
+                model_name=request.subtask_reflection_model_name
+                or settings.subtask_reflection_model_name,
+                params=request.subtask_reflection_model_params
+                or settings.subtask_reflection_model_params,
             ),
-            create_last_answer=_mk_cfg(
-                request.final_answer_model_name,
-                request.final_answer_params,
-                settings,
+            create_last_answer=LLMConfig(
+                model_name=request.create_last_answer_model_name
+                or settings.create_last_answer_model_name,
+                params=request.create_last_answer_model_params
+                or settings.create_last_answer_model_params,
             ),
         )
 
@@ -671,8 +668,6 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
         )
 
         # 6. AIエージェントの実行（RAGas評価の有無に応じて分岐）
-        print(request)
-
         if request.is_run_ragas:
             ragas_metrics = [
                 answer_relevancy,  # 質問との関連性
@@ -685,7 +680,6 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
                 ai_agent_tools=ai_agent_tools,
                 ai_agent_prompts=ai_agent_prompts,
                 langfuse_session_id=langfuse_session_id,
-                # ragas_retrieved_contexts=request.ragas_retrieved_contexts,
                 ragas_reference=request.ragas_reference,
                 ragas_metrics=ragas_metrics,
             )
@@ -702,11 +696,10 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
 
         execution_time = time.time() - start_time
 
-        # 7. 実行結果の詳細情報構築（サブタスク詳細、統計情報）
+        # 7. レスポンスの作成 実行結果の詳細情報構築（サブタスク詳細、統計情報）
         subtasks_detail = []
         total_challenge_count = 0
         completed_subtasks = 0
-
         for subtask in agent_result.subtasks:
             # ツール実行回数を計算
             tool_results_count = sum(
@@ -728,15 +721,12 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
             if subtask.is_completed:
                 completed_subtasks += 1
 
-        # 8. RAGasスコアの辞書形式変換
+        # 8. レスポンスの作成 RAGasスコアの辞書形式変換
         ragas_scores_dict = {}
         if request.is_run_ragas and ragas_scores is not None:
             ragas_scores_dict = _normalize_ragas_scores(ragas_scores)
-        else:
-            # RAGas評価を実行しない場合は空の辞書
-            ragas_scores_dict = {}
 
-        # 9. レスポンスモデルの構築と返却
+        # 9. レスポンスの作成 レスポンスモデルの構築と返却
         prompt_data = PromptData(
             planner_system_prompt=request.ai_agent_planner_system_prompt
             or PLANNER_SYSTEM_PROMPT,
@@ -781,6 +771,9 @@ async def exec_chatbot_ai_agent(request: AIAgentRequest) -> AIAgentResponse:
         )
 
     except Exception as e:
+
+        print(f"Error during AI Agent execution: {e}")
+
         execution_time = time.time() - start_time
 
         # エラーハンドリング（例外発生時のフォールバック処理）

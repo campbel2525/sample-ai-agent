@@ -1,4 +1,5 @@
 from typing import Any, Mapping
+from config.settings import Settings
 
 from pydantic import BaseModel, Field
 
@@ -8,6 +9,8 @@ DEFAULT_MODEL_PARAM: dict[str, Any] = {
     "seed": 0,
 }
 
+settings = Settings()
+
 
 def default_params() -> dict[str, Any]:
     # 共有参照を避けるため毎回コピー
@@ -15,7 +18,7 @@ def default_params() -> dict[str, Any]:
 
 
 class LLMConfig(BaseModel):
-    """OpenAIモデルの設定（1フェーズぶん）"""
+    """OpenAIモデルの設定"""
 
     model_name: str = Field(
         default=DEFAULT_MODEL_NAME,
@@ -27,14 +30,55 @@ class LLMConfig(BaseModel):
     )
 
 
+def make_planner_config() -> "LLMConfig":
+    return LLMConfig(
+        model_name=settings.planner_model_name,
+        params=dict(settings.planner_model_params),
+    )
+
+
+def make_subtask_tool_selection_config() -> "LLMConfig":
+    return LLMConfig(
+        model_name=settings.subtask_tool_selection_model_name,
+        params=dict(settings.subtask_tool_selection_model_params),
+    )
+
+
+def make_subtask_answer_config() -> "LLMConfig":
+    return LLMConfig(
+        model_name=settings.subtask_answer_model_name,
+        params=dict(settings.subtask_answer_model_params),
+    )
+
+
+def make_subtask_reflection_config() -> "LLMConfig":
+    return LLMConfig(
+        model_name=settings.subtask_reflection_model_name,
+        params=dict(settings.subtask_reflection_model_params),
+    )
+
+
+def make_create_last_answer_config() -> "LLMConfig":
+    return LLMConfig(
+        model_name=settings.create_last_answer_model_name,
+        params=dict(settings.create_last_answer_model_params),
+    )
+
+
 class LLMPhaseConfigs(BaseModel):
     """各フェーズごとのOpenAIモデル + 生成パラメータ"""
 
-    planner: LLMConfig = Field(default_factory=LLMConfig)
-    subtask_tool_selection: LLMConfig = Field(default_factory=LLMConfig)
-    subtask_answer: LLMConfig = Field(default_factory=LLMConfig)
-    subtask_reflection: LLMConfig = Field(default_factory=LLMConfig)
-    create_last_answer: LLMConfig = Field(default_factory=LLMConfig)
+    planner: LLMConfig = Field(default_factory=make_planner_config)
+    subtask_tool_selection: LLMConfig = Field(
+        default_factory=make_subtask_tool_selection_config
+    )
+    subtask_answer: LLMConfig = Field(default_factory=make_subtask_answer_config)
+    subtask_reflection: LLMConfig = Field(
+        default_factory=make_subtask_reflection_config
+    )
+    create_last_answer: LLMConfig = Field(
+        default_factory=make_create_last_answer_config
+    )
 
 
 class Plan(BaseModel):

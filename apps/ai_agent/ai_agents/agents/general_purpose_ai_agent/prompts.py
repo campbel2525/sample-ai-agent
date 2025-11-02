@@ -126,7 +126,6 @@ SUBTASK_REFLECTION_USER_PROMPT = """
 - query_refinement_needed の場合のみ、advice内に「improved_query: ...」を1行で示してください。
 """
 
-
 SUBTASK_RETRY_ANSWER_USER_PROMPT = """
 1.ツール選択・実行をリフレクションの結果に従ってやり直してください
 """

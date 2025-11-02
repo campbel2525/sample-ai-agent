@@ -17,11 +17,11 @@ DEFAULT_FASTAPI_BASE_URL = "http://ai-agent:8000"
 DEFAULT_RUN_RAGAS = False
 
 # モデル名の既定値（未入力時はAPI側の既定でも動くが、UIでは明示）
-DEFAULT_PLANNER_MODEL = "gpt-4o-2024-08-06"
-DEFAULT_SUBTASK_TOOL_SELECTION_MODEL = "gpt-4o-2024-08-06"
-DEFAULT_SUBTASK_ANSWER_MODEL = "gpt-4o-2024-08-06"
-DEFAULT_SUBTASK_REFLECTION_MODEL = "gpt-4o-2024-08-06"
-DEFAULT_FINAL_ANSWER_MODEL = "gpt-4o-2024-08-06"
+DEFAULT_PLANNER_MODEL = ""
+DEFAULT_SUBTASK_TOOL_SELECTION_MODEL = ""
+DEFAULT_SUBTASK_ANSWER_MODEL = ""
+DEFAULT_SUBTASK_REFLECTION_MODEL = ""
+DEFAULT_FINAL_ANSWER_MODEL = ""
 
 # UIの高さ・タイムアウト
 PROMPT_TEXTAREA_HEIGHT = 120
@@ -155,25 +155,25 @@ def main():
         subtask_reflection_model_name = st.text_input(
             "subtask_reflection_model_name", value=DEFAULT_SUBTASK_REFLECTION_MODEL
         )
-        final_answer_model_name = st.text_input(
-            "final_answer_model_name", value=DEFAULT_FINAL_ANSWER_MODEL
+        create_last_answer_model_name = st.text_input(
+            "create_last_answer_model_name", value=DEFAULT_FINAL_ANSWER_MODEL
         )
 
         st.subheader("モデルパラメータ(JSON) (未入力はNone)")
         planner_params_raw = st.text_area(
             "planner_params", height=PARAMS_TEXTAREA_HEIGHT
         )
-        subtask_tool_selection_params_raw = st.text_area(
-            "subtask_tool_selection_params", height=PARAMS_TEXTAREA_HEIGHT
+        subtask_tool_selection_model_params_raw = st.text_area(
+            "subtask_tool_selection_model_params", height=PARAMS_TEXTAREA_HEIGHT
         )
-        subtask_answer_params_raw = st.text_area(
-            "subtask_answer_params", height=PARAMS_TEXTAREA_HEIGHT
+        subtask_answer_model_params_raw = st.text_area(
+            "subtask_answer_model_params", height=PARAMS_TEXTAREA_HEIGHT
         )
-        subtask_reflection_params_raw = st.text_area(
-            "subtask_reflection_params", height=PARAMS_TEXTAREA_HEIGHT
+        subtask_reflection_model_params_raw = st.text_area(
+            "subtask_reflection_model_params", height=PARAMS_TEXTAREA_HEIGHT
         )
-        final_answer_params_raw = st.text_area(
-            "final_answer_params", height=PARAMS_TEXTAREA_HEIGHT
+        create_last_answer_model_params_raw = st.text_area(
+            "create_last_answer_model_params", height=PARAMS_TEXTAREA_HEIGHT
         )
 
         st.subheader("プロンプト上書き (未入力は既定)")
@@ -301,17 +301,18 @@ def main():
 
         # JSONパラメータの解析
         planner_params = parse_json_or_none("planner_params", planner_params_raw)
-        subtask_tool_selection_params = parse_json_or_none(
-            "subtask_tool_selection_params", subtask_tool_selection_params_raw
+        subtask_tool_selection_model_params = parse_json_or_none(
+            "subtask_tool_selection_model_params",
+            subtask_tool_selection_model_params_raw,
         )
-        subtask_answer_params = parse_json_or_none(
-            "subtask_answer_params", subtask_answer_params_raw
+        subtask_answer_model_params = parse_json_or_none(
+            "subtask_answer_model_params", subtask_answer_model_params_raw
         )
-        subtask_reflection_params = parse_json_or_none(
-            "subtask_reflection_params", subtask_reflection_params_raw
+        subtask_reflection_model_params = parse_json_or_none(
+            "subtask_reflection_model_params", subtask_reflection_model_params_raw
         )
-        final_answer_params = parse_json_or_none(
-            "final_answer_params", final_answer_params_raw
+        create_last_answer_model_params = parse_json_or_none(
+            "create_last_answer_model_params", create_last_answer_model_params_raw
         )
 
         def nvl(s: str) -> Optional[str]:
@@ -335,12 +336,12 @@ def main():
             "subtask_tool_selection_model_name": nvl(subtask_tool_selection_model_name),
             "subtask_answer_model_name": nvl(subtask_answer_model_name),
             "subtask_reflection_model_name": nvl(subtask_reflection_model_name),
-            "final_answer_model_name": nvl(final_answer_model_name),
+            "create_last_answer_model_name": nvl(create_last_answer_model_name),
             "planner_params": planner_params,
-            "subtask_tool_selection_params": subtask_tool_selection_params,
-            "subtask_answer_params": subtask_answer_params,
-            "subtask_reflection_params": subtask_reflection_params,
-            "final_answer_params": final_answer_params,
+            "subtask_tool_selection_model_params": subtask_tool_selection_model_params,
+            "subtask_answer_model_params": subtask_answer_model_params,
+            "subtask_reflection_model_params": subtask_reflection_model_params,
+            "create_last_answer_model_params": create_last_answer_model_params,
             "ai_agent_planner_system_prompt": nvl(ai_agent_planner_system_prompt),
             "ai_agent_planner_user_prompt": nvl(ai_agent_planner_user_prompt),
             "ai_agent_subtask_system_prompt": nvl(ai_agent_subtask_system_prompt),
