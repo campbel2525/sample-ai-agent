@@ -63,7 +63,7 @@ services:
       context: ../../
       dockerfile: ./docker/local/Dockerfile.ai-agent
     ports:
-      - "127.0.0.1:9001:9001" # デバッグ用
+      - "127.0.0.1:9002:9002" # デバッグ用
       - "127.0.0.1:8000:8000" # API用
     volumes:
       - ../../apps/ai_agent:/project
@@ -79,7 +79,7 @@ services:
       context: ../../
       dockerfile: ./docker/local/Dockerfile.tuning-ai-agent
     ports:
-      - "127.0.0.1:9002:9002" # デバッグ用
+      - "127.0.0.1:9003:9003" # デバッグ用
     volumes:
       - ../../apps/tuning_ai_agent:/project
       - ../../data:/project/data
@@ -199,7 +199,7 @@ services:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: miniosecret # CHANGEME
     ports:
-      - 9090:9000
+      - 127.0.0.1:9090:9000
       - 127.0.0.1:9091:9001
     volumes:
       - langfuse_minio_data:/data
@@ -225,7 +225,7 @@ services:
       retries: 10
 
   postgres:
-    image: docker.io/postgres:${POSTGRES_VERSION:-latest}
+    image: docker.io/postgres:18
     restart: "no"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -239,7 +239,7 @@ services:
     ports:
       - 127.0.0.1:5432:5432
     volumes:
-      - langfuse_postgres_data:/var/lib/postgresql/data
+      - langfuse_postgres_data:/var/lib/postgresql
 
 volumes:
   opensearch_data:

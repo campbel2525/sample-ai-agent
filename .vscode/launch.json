@@ -5,7 +5,7 @@
       "name": "python",
       "type": "python",
       "request": "attach",
-      "port": 9001,
+      "port": 9002,
       "host": "localhost",
       "pathMappings": [
         {
@@ -18,7 +18,7 @@
       "name": "python",
       "type": "python",
       "request": "attach",
-      "port": 9002,
+      "port": 9003,
       "host": "localhost",
       "pathMappings": [
         {
