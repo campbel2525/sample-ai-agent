@@ -89,6 +89,8 @@ class Agent:
         settings: AgentSettings | None = None,
         tools: list[BaseTool] = [],
         max_challenge_count: int = 3,
+        # チャット履歴の最大使用件数（Noneで全件）
+        chat_history_max_turns: Optional[int] = None,
     ) -> None:
         """エージェントを初期化する。
 
@@ -112,6 +114,7 @@ class Agent:
         )
 
         self.max_challenge_count = max_challenge_count
+        self.chat_history_max_turns = chat_history_max_turns
 
     def run_agent(
         self, query: str, chat_history: list[ChatCompletionMessageParam] = []
@@ -189,16 +192,23 @@ class Agent:
 
         logger.info("🚀 Starting plan generation process...")
 
-        # チャット履歴 + プロンプトからメッセージを生成
-        messages: list[ChatCompletionMessageParam] = list(state.get("chat_history", []))
-        planner_prompt = cast(PromptSystemUser, self.settings.planner.prompt)
-        messages.append({"role": "system", "content": planner_prompt.system_prompt})
-        messages.append(
+        # メッセージ作成
+        messages: list[ChatCompletionMessageParam] = [
+            {
+                "role": "system",
+                "content": self.settings.planner.prompt.system_prompt.format(
+                    conversation_context=self._format_chat_history(
+                        state.get("chat_history", [])
+                    )
+                ),
+            },
             {
                 "role": "user",
-                "content": planner_prompt.user_prompt.format(query=state["query"]),
-            }
-        )
+                "content": self.settings.planner.prompt.user_prompt.format(
+                    query=state["query"]
+                ),
+            },
+        ]
 
         logger.debug(f"Final prompt messages: {messages}")
 
@@ -245,13 +255,19 @@ class Agent:
         # リトライされたかどうかでプロンプトを切り替える
         if state["challenge_count"] == 0:
             logger.debug("Creating user prompt for tool selection...")
-            st_prompt = cast(PromptSystemUser, self.settings.subtask_select_tool.prompt)
-            user_prompt = st_prompt.user_prompt.format(
-                query=state["query"], plan=state["plan"], subtask=state["subtask"]
-            )
-            messages = [
-                {"role": "system", "content": st_prompt.system_prompt},
-                {"role": "user", "content": user_prompt},
+            messages: list[ChatCompletionMessageParam] = [
+                {
+                    "role": "system",
+                    "content": self.settings.subtask_select_tool.prompt.system_prompt,
+                },
+                {
+                    "role": "user",
+                    "content": self.settings.subtask_select_tool.prompt.user_prompt.format(  # NOQA: E501
+                        query=state["query"],
+                        plan=state["plan"],
+                        subtask=state["subtask"],
+                    ),
+                },
             ]
             try:
                 logger.info("Sending request to OpenAI...")
@@ -278,9 +294,7 @@ class Agent:
                 if message["role"] != "tool" and "tool_calls" not in message
             ]
 
-            retry_prompt = cast(
-                PromptUserOnly, self.settings.subtask_retry_answer.prompt
-            )
+            retry_prompt = self.settings.subtask_retry_answer.prompt
             messages.append({"role": "user", "content": retry_prompt.user_prompt})
 
             try:
@@ -427,7 +441,7 @@ class Agent:
         logger.info("🚀 Starting reflection process...")
         messages = state["messages"]
 
-        refl_prompt = cast(PromptUserOnly, self.settings.subtask_reflection.prompt)
+        refl_prompt = self.settings.subtask_reflection.prompt
         messages.append({"role": "user", "content": refl_prompt.user_prompt})
 
         try:
@@ -484,19 +498,24 @@ class Agent:
 
         logger.info("🚀 Starting final answer creation process...")
         # サブタスク結果のうちタスク内容と回答のみを取得
+        subtask_results_seq = state.get("subtask_results", [])
         subtask_results = [
-            (result.task_name, result.subtask_answer)
-            for result in state["subtask_results"]
+            (result.task_name, result.subtask_answer) for result in subtask_results_seq
         ]
-        fa_prompt = cast(PromptSystemUser, self.settings.final_answer.prompt)
         messages: list[ChatCompletionMessageParam] = [
-            {"role": "system", "content": fa_prompt.system_prompt},
+            {
+                "role": "system",
+                "content": self.settings.final_answer.prompt.system_prompt.format(
+                    conversation_context=self._format_chat_history(
+                        state.get("chat_history", [])
+                    ),
+                    subtask_results=str(subtask_results),
+                ),
+            },
             {
                 "role": "user",
-                "content": fa_prompt.user_prompt.format(
+                "content": self.settings.final_answer.prompt.user_prompt.format(
                     query=state["query"],
-                    plan=state["plan"],
-                    subtask_results=str(subtask_results),
                 ),
             },
         ]
@@ -687,3 +706,30 @@ class Agent:
             messages=messages,
             **rest,
         )
+
+    def _format_chat_history(
+        self, chat_history: list[ChatCompletionMessageParam]
+    ) -> str:
+        """ユーザー/アシスタントの履歴のみを文字列に整形する。
+
+        - roleがuser/assistant以外（system/toolなど）は除外
+        - 表示ラベルは日本語化（ユーザー/チャットボット）
+        - chat_history_max_turnsが指定されていれば末尾からその件数を採用
+        """
+        if not chat_history:
+            return ""
+
+        filtered = [m for m in chat_history if m.get("role") in ("user", "assistant")]
+
+        # 末尾N件に制限（Noneなら全件）
+        if self.chat_history_max_turns is not None and self.chat_history_max_turns > 0:
+            filtered = filtered[-self.chat_history_max_turns :]
+
+        role_map = {"user": "ユーザー", "assistant": "チャットボット"}
+        lines: list[str] = []
+        for m in filtered:
+            role = role_map.get(m.get("role", ""), "")
+            content = str(m.get("content", "")).strip()
+            if role and content:
+                lines.append(f"{role}: {content}")
+        return "\n".join(lines)

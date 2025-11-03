@@ -1,6 +1,7 @@
-from typing import Any, Mapping
+from typing import Any, Mapping, Generic, TypeVar
 
 from pydantic import BaseModel, Field, model_validator
+from pydantic.generics import GenericModel
 
 from .settings import (
     FINAL_ANSWER_MODEL_NAME,
@@ -103,8 +104,11 @@ class PromptUserOnly(PromptBase):
     pass
 
 
-class PhaseSettings(BaseModel):
-    prompt: PromptBase
+TPrompt = TypeVar("TPrompt", bound=PromptBase)
+
+
+class PhaseSettings(GenericModel, Generic[TPrompt]):
+    prompt: TPrompt
     model_name: str = ""
     model_params: Mapping[str, Any] = Field(
         default_factory=lambda: {"temperature": 0, "seed": 0}
@@ -112,11 +116,11 @@ class PhaseSettings(BaseModel):
 
 
 class AgentSettings(BaseModel):
-    planner: PhaseSettings
-    subtask_select_tool: PhaseSettings
-    subtask_reflection: PhaseSettings
-    subtask_retry_answer: PhaseSettings
-    final_answer: PhaseSettings
+    planner: PhaseSettings[PromptSystemUser]
+    subtask_select_tool: PhaseSettings[PromptSystemUser]
+    subtask_reflection: PhaseSettings[PromptUserOnly]
+    subtask_retry_answer: PhaseSettings[PromptUserOnly]
+    final_answer: PhaseSettings[PromptSystemUser]
 
     def __init__(
         self,
