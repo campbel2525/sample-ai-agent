@@ -135,13 +135,14 @@ def main():
     # 固定URL（入力欄は廃止）
     with st.sidebar:
         # 参考リンク（FastAPIのAPI仕様）
+        st.subheader("API設定")
         st.caption("詳しくは http://localhost:8000/docs 参照")
 
         st.subheader("RAGas")
         is_run_ragas = st.checkbox("RAGasを実行する", value=DEFAULT_RUN_RAGAS)
         ragas_reference = st.text_area("RAGas reference", value="")
 
-        st.subheader("モデル設定 (未入力はAPI既定)")
+        st.subheader("モデル設定")
         planner_model_name = st.text_input(
             "planner_model_name", value=DEFAULT_PLANNER_MODEL
         )
@@ -159,7 +160,7 @@ def main():
             "final_answer_model_name", value=DEFAULT_FINAL_ANSWER_MODEL
         )
 
-        st.subheader("モデルパラメータ(JSON) (未入力はNone)")
+        st.subheader("モデルパラメータ(JSON)")
         planner_params_raw = st.text_area(
             "planner_params", height=PARAMS_TEXTAREA_HEIGHT
         )
@@ -176,7 +177,7 @@ def main():
             "final_answer_model_params", height=PARAMS_TEXTAREA_HEIGHT
         )
 
-        st.subheader("プロンプト上書き (未入力は既定)")
+        st.subheader("プロンプト上書き")
         with st.expander("Planner prompts"):
             ai_agent_planner_system_prompt = st.text_area(
                 "planner_system_prompt", height=PROMPT_TEXTAREA_HEIGHT
@@ -357,9 +358,7 @@ def main():
             "subtask_retry_answer_user_prompt": nvl(
                 ai_agent_subtask_retry_answer_user_prompt
             ),
-            "final_answer_system_prompt": nvl(
-                ai_agent_final_answer_system_prompt
-            ),
+            "final_answer_system_prompt": nvl(ai_agent_final_answer_system_prompt),
             "final_answer_user_prompt": nvl(ai_agent_final_answer_user_prompt),
             # チェックボックスの値をそのまま渡す（事前に参照の必須チェック済み）
             "is_run_ragas": is_run_ragas,
