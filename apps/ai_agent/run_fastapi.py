@@ -22,6 +22,16 @@ from ai_agents.agents.general_purpose_ai_agent.settings import (
 from ai_agents.tools.hybrid_search_tool import HybridSearchTool
 from config.settings import Settings
 from services.ai_agent_service import run_ai_agent, run_ai_agent_with_rags
+from ai_agents.agents.general_purpose_ai_agent.models import (
+    AgentResult,
+    AgentSettings,
+)
+from ragas.dataset_schema import (
+    EvaluationDataset,
+    EvaluationResult,
+)
+
+settings = Settings()
 
 
 class AIAgentRequest(BaseModel):
@@ -416,6 +426,87 @@ class AIAgentResponse(BaseModel):
     )
 
 
+def get_response(
+    request: AIAgentRequest,
+    agent_result: AgentResult,
+    ragas_scores: Optional[EvaluationResult],
+    langfuse_session_id: str,
+    execution_time: float,
+):
+    # 7. レスポンスの作成 実行結果の詳細情報構築（サブタスク詳細、統計情報）
+    subtasks_detail = []
+    total_challenge_count = 0
+    completed_subtasks = 0
+    for subtask in agent_result.subtasks:
+        # ツール実行回数を計算
+        tool_results_count = sum(
+            len(tool_result_list) for tool_result_list in subtask.tool_results
+        )
+
+        subtasks_detail.append(
+            SubtaskDetail(
+                task_name=subtask.task_name,
+                is_completed=subtask.is_completed,
+                subtask_answer=subtask.subtask_answer,
+                challenge_count=subtask.challenge_count,
+                tool_results_count=tool_results_count,
+                reflection_count=len(subtask.reflection_results),
+            )
+        )
+
+        total_challenge_count += subtask.challenge_count
+        if subtask.is_completed:
+            completed_subtasks += 1
+
+    # 8. レスポンスの作成 RAGasスコアの辞書形式変換
+    ragas_scores_dict = {}
+    if request.is_run_ragas and ragas_scores is not None:
+        ragas_scores_dict = _normalize_ragas_scores(ragas_scores)
+
+    # 9. レスポンスの作成 レスポンスモデルの構築と返却
+    prompt_data = PromptData(
+        planner_system_prompt=request.planner_system_prompt or PLANNER_SYSTEM_PROMPT,
+        planner_user_prompt=request.planner_user_prompt or PLANNER_USER_PROMPT,
+        subtask_select_tool_system_prompt=(
+            request.subtask_tool_selection_system_prompt
+            or SUBTASK_TOOL_SELECTION_SYSTEM_PROMPT
+        ),
+        subtask_select_tool_user_prompt=request.subtask_tool_selection_user_prompt  # noqa: E501
+        or SUBTASK_TOOL_SELECTION_USER_PROMPT,
+        subtask_reflection_user_prompt=request.subtask_reflection_user_prompt  # noqa: E501
+        or SUBTASK_REFLECTION_USER_PROMPT,
+        subtask_retry_answer_user_prompt=request.subtask_retry_answer_user_prompt  # noqa: E501
+        or SUBTASK_RETRY_ANSWER_USER_PROMPT,
+        final_answer_system_prompt=request.final_answer_system_prompt  # noqa: E501
+        or FINAL_ANSWER_SYSTEM_PROMPT,
+        final_answer_user_prompt=request.final_answer_user_prompt  # noqa: E501
+        or FINAL_ANSWER_USER_PROMPT,
+    )
+    ai_agent_result = AIAgentResult(
+        prompt=prompt_data,
+        plan=agent_result.plan.subtasks,
+        subtasks_detail=subtasks_detail,
+        total_subtasks=len(agent_result.subtasks),
+        completed_subtasks=completed_subtasks,
+        total_challenge_count=total_challenge_count,
+    )
+    ragas_input = RagasInput(
+        ragas_reference=request.ragas_reference,
+    )
+    ragas_result = RagasResult(
+        scores=ragas_scores_dict,
+        input=ragas_input,
+    )
+    return AIAgentResponse(
+        query=request.query,
+        answer=agent_result.answer,
+        ai_agent_result=ai_agent_result,
+        ragas_result=ragas_result,
+        langfuse_session_id=langfuse_session_id,
+        execution_time=execution_time,
+    )
+
+
 app = FastAPI(
     title="AI Agents API", description="AI Agents API with FastAPI", version="1.0.0"
 )
@@ -529,14 +620,10 @@ async def exec_chatbot_ai_agent(
 
     処理の流れ:
     1. 実行時間計測開始とLangfuseセッションID生成
-    2. 設定情報の読み込み
-    3. カスタムプロンプトの設定（プランナー、サブタスク、最終回答作成用）
-    4. LLM設定
-    5. ツールの準備（HybridSearchTool）
-    6. AIエージェントの実行（RAGas評価の有無に応じて分岐）
-    7. レスポンスの作成 実行結果の詳細情報構築（サブタスク詳細、統計情報）
-    8. レスポンスの作成 RAGasスコアの辞書形式変換
-    9. レスポンスの作成 レスポンスモデルの構築と返却
+    2. AIエージェントの設定（プランナー、サブタスク、最終回答作成用, LLMの設定）
+    3. ツールの準備（HybridSearchTool）
+    4. AIエージェントの実行（RAGas評価の有無に応じて分岐）
+    5. レスポンスの作成 (実行結果の詳細情報構築(サブタスク詳細、統計情報), RAGasスコアのまとめ)
 
     ## レスポンス例
 
@@ -556,14 +643,11 @@ async def exec_chatbot_ai_agent(
     # 1. 実行時間計測開始とLangfuseセッションID生成
     start_time = time.time()
 
-    # 2. 設定情報の読み込み
-    settings = Settings()
-
     # LangfuseセッションIDを生成
     langfuse_session_id = str(uuid.uuid4())
 
     try:
-        # 4. AgentSettings 構築（リクエスト値が None の場合は既定にフォールバック）
+        # 2. AIエージェントの設定（プランナー、サブタスク、最終回答作成用, LLMの設定）
         ai_agent_settings = AgentSettings(
             # models (first)
             planner_model_name=request.planner_model_name,
@@ -601,7 +685,7 @@ async def exec_chatbot_ai_agent(
             final_answer_user_prompt=request.final_answer_user_prompt,
         )
 
-        # 5. ツールの準備（HybridSearchTool）
+        # 3. ツールの準備（HybridSearchTool）
         hybrid_search_tool = HybridSearchTool(
             openai_api_key=settings.openai_api_key,
             openai_base_url=settings.openai_base_url,
@@ -612,9 +696,7 @@ async def exec_chatbot_ai_agent(
         )
         ai_agent_tools = [hybrid_search_tool]
 
-        # 3. プロンプトは AgentSettings に内包済み（上記で構築）
-
-        # 6. AIエージェントの実行（RAGas評価の有無に応じて分岐）
+        # 4. AIエージェントの実行（RAGas評価の有無に応じて分岐）
         if request.is_run_ragas:
             ragas_metrics = [
                 answer_relevancy,  # 質問との関連性
@@ -639,81 +721,14 @@ async def exec_chatbot_ai_agent(
             )
             ragas_scores = None
 
+        # 5. レスポンスの作成 (実行結果の詳細情報構築(サブタスク詳細、統計情報), RAGasスコアのまとめ)
         execution_time = time.time() - start_time
-
-        # 7. レスポンスの作成 実行結果の詳細情報構築（サブタスク詳細、統計情報）
-        subtasks_detail = []
-        total_challenge_count = 0
-        completed_subtasks = 0
-        for subtask in agent_result.subtasks:
-            # ツール実行回数を計算
-            tool_results_count = sum(
-                len(tool_result_list) for tool_result_list in subtask.tool_results
-            )
-
-            subtasks_detail.append(
-                SubtaskDetail(
-                    task_name=subtask.task_name,
-                    is_completed=subtask.is_completed,
-                    subtask_answer=subtask.subtask_answer,
-                    challenge_count=subtask.challenge_count,
-                    tool_results_count=tool_results_count,
-                    reflection_count=len(subtask.reflection_results),
-                )
-            )
-
-            total_challenge_count += subtask.challenge_count
-            if subtask.is_completed:
-                completed_subtasks += 1
-
-        # 8. レスポンスの作成 RAGasスコアの辞書形式変換
-        ragas_scores_dict = {}
-        if request.is_run_ragas and ragas_scores is not None:
-            ragas_scores_dict = _normalize_ragas_scores(ragas_scores)
-
-        # 9. レスポンスの作成 レスポンスモデルの構築と返却
-        prompt_data = PromptData(
-            planner_system_prompt=request.planner_system_prompt
-            or PLANNER_SYSTEM_PROMPT,
-            planner_user_prompt=request.planner_user_prompt or PLANNER_USER_PROMPT,
-            subtask_select_tool_system_prompt=(
-                request.subtask_tool_selection_system_prompt
-                or SUBTASK_TOOL_SELECTION_SYSTEM_PROMPT
-            ),
-            subtask_select_tool_user_prompt=request.subtask_tool_selection_user_prompt  # noqa: E501
-            or SUBTASK_TOOL_SELECTION_USER_PROMPT,
-            subtask_reflection_user_prompt=request.subtask_reflection_user_prompt  # noqa: E501
-            or SUBTASK_REFLECTION_USER_PROMPT,
-            subtask_retry_answer_user_prompt=request.subtask_retry_answer_user_prompt  # noqa: E501
-            or SUBTASK_RETRY_ANSWER_USER_PROMPT,
-            final_answer_system_prompt=request.final_answer_system_prompt  # noqa: E501
-            or FINAL_ANSWER_SYSTEM_PROMPT,
-            final_answer_user_prompt=request.final_answer_user_prompt  # noqa: E501
-            or FINAL_ANSWER_USER_PROMPT,
-        )
-        ai_agent_result = AIAgentResult(
-            prompt=prompt_data,
-            plan=agent_result.plan.subtasks,
-            subtasks_detail=subtasks_detail,
-            total_subtasks=len(agent_result.subtasks),
-            completed_subtasks=completed_subtasks,
-            total_challenge_count=total_challenge_count,
-        )
-        ragas_input = RagasInput(
-            # ragas_retrieved_contexts=request.ragas_retrieved_contexts,
-            ragas_reference=request.ragas_reference,
-        )
-        ragas_result = RagasResult(
-            scores=ragas_scores_dict,
-            input=ragas_input,
-        )
-        return AIAgentResponse(
-            query=request.query,
-            answer=agent_result.answer,
-            ai_agent_result=ai_agent_result,
-            ragas_result=ragas_result,
-            langfuse_session_id=langfuse_session_id,
-            execution_time=execution_time,
+        return get_response(
+            request,
+            agent_result,
+            ragas_scores,
+            langfuse_session_id,
+            execution_time,
         )
 
     except Exception as e:
