@@ -426,87 +426,6 @@ class AIAgentResponse(BaseModel):
     )
 
 
-def get_response(
-    request: AIAgentRequest,
-    agent_result: AgentResult,
-    ragas_scores: Optional[EvaluationResult],
-    langfuse_session_id: str,
-    execution_time: float,
-):
-    # 7. レスポンスの作成 実行結果の詳細情報構築（サブタスク詳細、統計情報）
-    subtasks_detail = []
-    total_challenge_count = 0
-    completed_subtasks = 0
-    for subtask in agent_result.subtasks:
-        # ツール実行回数を計算
-        tool_results_count = sum(
-            len(tool_result_list) for tool_result_list in subtask.tool_results
-        )
-
-        subtasks_detail.append(
-            SubtaskDetail(
-                task_name=subtask.task_name,
-                is_completed=subtask.is_completed,
-                subtask_answer=subtask.subtask_answer,
-                challenge_count=subtask.challenge_count,
-                tool_results_count=tool_results_count,
-                reflection_count=len(subtask.reflection_results),
-            )
-        )
-
-        total_challenge_count += subtask.challenge_count
-        if subtask.is_completed:
-            completed_subtasks += 1
-
-    # 8. レスポンスの作成 RAGasスコアの辞書形式変換
-    ragas_scores_dict = {}
-    if request.is_run_ragas and ragas_scores is not None:
-        ragas_scores_dict = _normalize_ragas_scores(ragas_scores)
-
-    # 9. レスポンスの作成 レスポンスモデルの構築と返却
-    prompt_data = PromptData(
-        planner_system_prompt=request.planner_system_prompt or PLANNER_SYSTEM_PROMPT,
-        planner_user_prompt=request.planner_user_prompt or PLANNER_USER_PROMPT,
-        subtask_select_tool_system_prompt=(
-            request.subtask_tool_selection_system_prompt
-            or SUBTASK_TOOL_SELECTION_SYSTEM_PROMPT
-        ),
-        subtask_select_tool_user_prompt=request.subtask_tool_selection_user_prompt  # noqa: E501
-        or SUBTASK_TOOL_SELECTION_USER_PROMPT,
-        subtask_reflection_user_prompt=request.subtask_reflection_user_prompt  # noqa: E501
-        or SUBTASK_REFLECTION_USER_PROMPT,
-        subtask_retry_answer_user_prompt=request.subtask_retry_answer_user_prompt  # noqa: E501
-        or SUBTASK_RETRY_ANSWER_USER_PROMPT,
-        final_answer_system_prompt=request.final_answer_system_prompt  # noqa: E501
-        or FINAL_ANSWER_SYSTEM_PROMPT,
-        final_answer_user_prompt=request.final_answer_user_prompt  # noqa: E501
-        or FINAL_ANSWER_USER_PROMPT,
-    )
-    ai_agent_result = AIAgentResult(
-        prompt=prompt_data,
-        plan=agent_result.plan.subtasks,
-        subtasks_detail=subtasks_detail,
-        total_subtasks=len(agent_result.subtasks),
-        completed_subtasks=completed_subtasks,
-        total_challenge_count=total_challenge_count,
-    )
-    ragas_input = RagasInput(
-        ragas_reference=request.ragas_reference,
-    )
-    ragas_result = RagasResult(
-        scores=ragas_scores_dict,
-        input=ragas_input,
-    )
-    return AIAgentResponse(
-        query=request.query,
-        answer=agent_result.answer,
-        ai_agent_result=ai_agent_result,
-        ragas_result=ragas_result,
-        langfuse_session_id=langfuse_session_id,
-        execution_time=execution_time,
-    )
-
-
 @app.post(
     "/ai_agents/chatbot/exec",
     response_model=AIAgentResponse,
@@ -732,7 +651,7 @@ async def exec_chatbot_ai_agent(
         return JSONResponse(status_code=500, content={"message": str(e)})
 
 
-def _normalize_ragas_scores(raw: Any) -> dict:
+def normalize_ragas_scores(raw: Any) -> dict:
     """
     RAGasの出力を必ずdictに正規化する。
     """
@@ -742,7 +661,7 @@ def _normalize_ragas_scores(raw: Any) -> dict:
 
     # .scoresを持つオブジェクト
     if hasattr(raw, "scores"):
-        return _normalize_ragas_scores(getattr(raw, "scores"))
+        return normalize_ragas_scores(getattr(raw, "scores"))
 
     # listの場合
     if isinstance(raw, list):
@@ -769,3 +688,84 @@ def _normalize_ragas_scores(raw: Any) -> dict:
 
     # それ以外 → 空dict
     return {}
+
+
+def get_response(
+    request: AIAgentRequest,
+    agent_result: AgentResult,
+    ragas_scores: Optional[EvaluationResult],
+    langfuse_session_id: str,
+    execution_time: float,
+):
+    # レスポンスの作成 実行結果の詳細情報構築（サブタスク詳細、統計情報）
+    subtasks_detail = []
+    total_challenge_count = 0
+    completed_subtasks = 0
+    for subtask in agent_result.subtasks:
+        # ツール実行回数を計算
+        tool_results_count = sum(
+            len(tool_result_list) for tool_result_list in subtask.tool_results
+        )
+
+        subtasks_detail.append(
+            SubtaskDetail(
+                task_name=subtask.task_name,
+                is_completed=subtask.is_completed,
+                subtask_answer=subtask.subtask_answer,
+                challenge_count=subtask.challenge_count,
+                tool_results_count=tool_results_count,
+                reflection_count=len(subtask.reflection_results),
+            )
+        )
+
+        total_challenge_count += subtask.challenge_count
+        if subtask.is_completed:
+            completed_subtasks += 1
+
+    # レスポンスの作成 RAGasスコアの辞書形式変換
+    ragas_scores_dict = {}
+    if request.is_run_ragas and ragas_scores is not None:
+        ragas_scores_dict = normalize_ragas_scores(ragas_scores)
+
+    # レスポンスの作成 レスポンスモデルの構築と返却
+    prompt_data = PromptData(
+        planner_system_prompt=request.planner_system_prompt or PLANNER_SYSTEM_PROMPT,
+        planner_user_prompt=request.planner_user_prompt or PLANNER_USER_PROMPT,
+        subtask_select_tool_system_prompt=(
+            request.subtask_tool_selection_system_prompt
+            or SUBTASK_TOOL_SELECTION_SYSTEM_PROMPT
+        ),
+        subtask_select_tool_user_prompt=request.subtask_tool_selection_user_prompt  # noqa: E501
+        or SUBTASK_TOOL_SELECTION_USER_PROMPT,
+        subtask_reflection_user_prompt=request.subtask_reflection_user_prompt  # noqa: E501
+        or SUBTASK_REFLECTION_USER_PROMPT,
+        subtask_retry_answer_user_prompt=request.subtask_retry_answer_user_prompt  # noqa: E501
+        or SUBTASK_RETRY_ANSWER_USER_PROMPT,
+        final_answer_system_prompt=request.final_answer_system_prompt  # noqa: E501
+        or FINAL_ANSWER_SYSTEM_PROMPT,
+        final_answer_user_prompt=request.final_answer_user_prompt  # noqa: E501
+        or FINAL_ANSWER_USER_PROMPT,
+    )
+    ai_agent_result = AIAgentResult(
+        prompt=prompt_data,
+        plan=agent_result.plan.subtasks,
+        subtasks_detail=subtasks_detail,
+        total_subtasks=len(agent_result.subtasks),
+        completed_subtasks=completed_subtasks,
+        total_challenge_count=total_challenge_count,
+    )
+    ragas_input = RagasInput(
+        ragas_reference=request.ragas_reference,
+    )
+    ragas_result = RagasResult(
+        scores=ragas_scores_dict,
+        input=ragas_input,
+    )
+    return AIAgentResponse(
+        query=request.query,
+        answer=agent_result.answer,
+        ai_agent_result=ai_agent_result,
+        ragas_result=ragas_result,
+        langfuse_session_id=langfuse_session_id,
+        execution_time=execution_time,
+    )
