@@ -113,9 +113,6 @@ SUBTASK_TOOL_SELECTION_USER_PROMPT = """
 SUBTASK_REFLECTION_MODEL_NAME: str = "gpt-4o-2024-08-06"
 SUBTASK_REFLECTION_MODEL_PARAMS: Dict[str, Any] = {"temperature": 0, "seed": 0}
 SUBTASK_REFLECTION_USER_PROMPT = """
-特例規則（必ず先に判定）:
-- もしサブタスクが「ユーザーに追い質問をする」の場合、内省は不要です。is_completed を true に設定し、advice は「追い質問タスクのため内省は不要です。」の一文にしてください。
-
 3.リフレクションを開始してください。
 - 取得結果の網羅性・関連性・重複を評価し、主要語（固有名・概念・バージョン等）の一致度を簡潔に判断してください。
 - 改善が必要な場合は、クエリの言い換え（同義語/英語化/正規名/属性付与）や絞り込み/拡張、k/sizeの調整を具体的に1つ提案してください（前回と重複させない）。
@@ -123,8 +120,7 @@ SUBTASK_REFLECTION_USER_PROMPT = """
 
 出力上の制約：
 - advice の末尾に、次のいずれか1つを必ず付けてください：
-  「classification: ambiguous | query_refinement_needed | out_of_scope |
-  no_evidence_in_corpus」
+  「classification: ambiguous | query_refinement_needed | out_of_scope | no_evidence_in_corpus」
 - query_refinement_needed の場合のみ、advice内に「improved_query: ...」を1行で示してください。
 """  # noqa E501
 
@@ -155,18 +151,7 @@ FINAL_ANSWER_SYSTEM_PROMPT = """
   「お答えできません。ご提示の資料の範囲では確認できません。」
 
 特例（追い質問）:
-- 計画に「ユーザーに追い質問をする」が含まれる場合、最終回答はその追い質問の内容Wのみ（メタ表現・前置き・補足なし、改行なし、文末の句読点は「。」のみ1つ）とする。
-
-曖昧判定規則（追い質問への切替）:
-- subtask_results を精読し、以下のいずれかに該当する場合は、通常回答ではなく「丁寧な一文の追い質問のみ」を返すこと。
-  - 根拠が不足/不一致/矛盾しており断定できない（候補が複数で同程度・結論が分かれる 等）
-  - 対象・範囲・期間・バージョン・前提が不明確で、補助情報なしに断定すると誤答リスクが高い
-  - 不確実な表現が含まれる（例：「資料からは判定できません」「見つかりませんでした」「根拠が弱い」「十分な情報がありません」 等）
-  - サブタスク回答が空/極端に短い/内容が乏しい
-- 追い質問の要件:
-  - 一文のみ、丁寧な口調（です・ます調）、文末は「。」
-  - メタ表現・前置き・補足・改行・装飾は一切含めない（質問文のみ）
-  - ユーザーが答えやすいよう、曖昧な要素（対象/範囲/期間/バージョン/前提 等）を絞り込む聞き方にする
+- 計画に「ユーザーに追い質問をする」が含まれる場合、最終回答はその追い質問の一文のみ（前置きや補足なし、文末の句読点は1つ）とする。
 """
 FINAL_ANSWER_USER_PROMPT = """
 ユーザーの質問: {query}

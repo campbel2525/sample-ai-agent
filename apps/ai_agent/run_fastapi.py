@@ -1,6 +1,7 @@
 import time
 import uuid
 from typing import Any, List, Optional
+import debugpy
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -27,7 +28,10 @@ from ai_agents.tools.hybrid_search_tool import HybridSearchTool
 from config.settings import Settings
 from services.ai_agent_service import run_ai_agent, run_ai_agent_with_rags
 
+
 settings = Settings()
+
+debugpy.listen((settings.fastapi_host, settings.debugpy_port))
 
 app = FastAPI(
     title="AI Agents API", description="AI Agents API with FastAPI", version="1.0.0"
