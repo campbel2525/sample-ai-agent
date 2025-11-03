@@ -42,10 +42,10 @@ PLANNER_SYSTEM_PROMPT = """
 質問が不明確な例: 「それについて教えて」（履歴からも「それ」が不明）
 計画:
 - ユーザーに追い質問をする
-"""
+"""  # noqa E501
 PLANNER_USER_PROMPT = """
 {query}
-"""
+"""  # noqa E501
 
 # subtask select tool
 SUBTASK_TOOL_SELECTION_MODEL_NAME: str = "gpt-4o-2024-08-06"
@@ -107,7 +107,7 @@ SUBTASK_TOOL_SELECTION_USER_PROMPT = """
 根拠が不十分な場合は「資料からは判定できません」と明記し、可能なら「出典: ...」を付記してください。
 
 注記：サブタスクが「ユーザーに追い質問をする」の場合、この指示（クエリ設計・ツール実行）は無視してください。ツールは使用せず、追い質問の一文のみ（メタ表現・前置き・補足なし、改行なし、文末は「。」）をサブタスク回答として出力してください。
-"""
+"""  # noqa E501
 
 # subtask reflection
 SUBTASK_REFLECTION_MODEL_NAME: str = "gpt-4o-2024-08-06"
@@ -126,7 +126,7 @@ SUBTASK_REFLECTION_USER_PROMPT = """
   「classification: ambiguous | query_refinement_needed | out_of_scope |
   no_evidence_in_corpus」
 - query_refinement_needed の場合のみ、advice内に「improved_query: ...」を1行で示してください。
-"""
+"""  # noqa E501
 
 # subtask retry answer
 SUBTASK_RETRY_ANSWER_MODEL_NAME: str = "gpt-4o-2024-08-06"
@@ -137,7 +137,7 @@ SUBTASK_RETRY_ANSWER_USER_PROMPT = """
 
 通常規則:
 1. ツール選択・実行をリフレクションの結果に従ってやり直してください
-"""
+"""  # noqa E501
 
 # final answer
 FINAL_ANSWER_MODEL_NAME: str = "gpt-4o-2024-08-06"
@@ -175,4 +175,4 @@ FINAL_ANSWER_USER_PROMPT = """
 
 上記に基づき、資料の根拠がある範囲でのみ回答を作成してください。根拠が無い場合は不回答規則に従ってください。
 なお、追い質問が必要と判断された場合は、追い質問のみを最終回答として返してください。
-"""
+"""  # noqa E501

@@ -6,9 +6,13 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel, Field, model_validator
+from ragas.dataset_schema import EvaluationResult
 from ragas.metrics import answer_relevancy, answer_similarity
 
-from ai_agents.agents.general_purpose_ai_agent.models import AgentSettings
+from ai_agents.agents.general_purpose_ai_agent.models import (
+    AgentResult,
+    AgentSettings,
+)
 from ai_agents.agents.general_purpose_ai_agent.settings import (
     FINAL_ANSWER_SYSTEM_PROMPT,
     FINAL_ANSWER_USER_PROMPT,
@@ -22,16 +26,12 @@ from ai_agents.agents.general_purpose_ai_agent.settings import (
 from ai_agents.tools.hybrid_search_tool import HybridSearchTool
 from config.settings import Settings
 from services.ai_agent_service import run_ai_agent, run_ai_agent_with_rags
-from ai_agents.agents.general_purpose_ai_agent.models import (
-    AgentResult,
-    AgentSettings,
-)
-from ragas.dataset_schema import (
-    EvaluationDataset,
-    EvaluationResult,
-)
 
 settings = Settings()
+
+app = FastAPI(
+    title="AI Agents API", description="AI Agents API with FastAPI", version="1.0.0"
+)
 
 
 class AIAgentRequest(BaseModel):
@@ -505,11 +505,6 @@ def get_response(
         langfuse_session_id=langfuse_session_id,
         execution_time=execution_time,
     )
-
-
-app = FastAPI(
-    title="AI Agents API", description="AI Agents API with FastAPI", version="1.0.0"
-)
 
 
 @app.post(
