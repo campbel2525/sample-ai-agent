@@ -1,4 +1,4 @@
-from typing import Any, Mapping, Generic, TypeVar
+from typing import Any, Generic, Mapping, TypeVar
 
 from pydantic import BaseModel, Field, model_validator
 from pydantic.generics import GenericModel
@@ -149,7 +149,7 @@ class AgentSettings(BaseModel):
         final_answer_user_prompt: str | None = None,
     ):
         # planner
-        planner_phase = PhaseSettings(
+        planner_phase: PhaseSettings[PromptSystemUser] = PhaseSettings(
             model_name=(
                 PLANNER_MODEL_NAME if planner_model_name is None else planner_model_name
             ),
@@ -172,7 +172,7 @@ class AgentSettings(BaseModel):
             ),
         )
         # subtask_tool_selection
-        subtask_select_tool_phase = PhaseSettings(
+        subtask_select_tool_phase: PhaseSettings[PromptSystemUser] = PhaseSettings(
             model_name=(
                 SUBTASK_TOOL_SELECTION_MODEL_NAME
                 if subtask_tool_selection_model_name is None
@@ -197,7 +197,7 @@ class AgentSettings(BaseModel):
             ),
         )
         # subtask_reflection
-        subtask_reflection_phase = PhaseSettings(
+        subtask_reflection_phase: PhaseSettings[PromptUserOnly] = PhaseSettings(
             model_name=(
                 SUBTASK_REFLECTION_MODEL_NAME
                 if subtask_reflection_model_name is None
@@ -217,7 +217,7 @@ class AgentSettings(BaseModel):
             ),
         )
         # subtask_retry_answer（モデルは subtask_answer を既定として流用する例）
-        subtask_retry_answer_phase = PhaseSettings(
+        subtask_retry_answer_phase: PhaseSettings[PromptUserOnly] = PhaseSettings(
             model_name=(
                 SUBTASK_RETRY_ANSWER_MODEL_NAME
                 if subtask_retry_answer_model_name is None
@@ -237,7 +237,7 @@ class AgentSettings(BaseModel):
             ),
         )
         # final_answer
-        final_answer_phase = PhaseSettings(
+        final_answer_phase: PhaseSettings[PromptSystemUser] = PhaseSettings(
             model_name=(
                 FINAL_ANSWER_MODEL_NAME
                 if final_answer_model_name is None

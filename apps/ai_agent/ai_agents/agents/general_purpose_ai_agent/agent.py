@@ -29,8 +29,6 @@ from .models import (
     AgentResult,
     AgentSettings,
     Plan,
-    PromptSystemUser,
-    PromptUserOnly,
     ReflectionResult,
     Subtask,
     ToolResult,
@@ -255,7 +253,7 @@ class Agent:
         # リトライされたかどうかでプロンプトを切り替える
         if state["challenge_count"] == 0:
             logger.debug("Creating user prompt for tool selection...")
-            messages: list[ChatCompletionMessageParam] = [
+            messages = [
                 {
                     "role": "system",
                     "content": self.settings.subtask_select_tool.prompt.system_prompt,
@@ -723,7 +721,7 @@ class Agent:
 
         # 末尾N件に制限（Noneなら全件）
         if self.chat_history_max_turns is not None and self.chat_history_max_turns > 0:
-            filtered = filtered[-self.chat_history_max_turns :]
+            filtered = filtered[-self.chat_history_max_turns :]  # NOQA: E203
 
         role_map = {"user": "ユーザー", "assistant": "チャットボット"}
         lines: list[str] = []
