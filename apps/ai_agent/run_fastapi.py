@@ -25,7 +25,7 @@ from ai_agents.agents.general_purpose_ai_agent.settings import (
 )
 from ai_agents.tools.hybrid_search_tool import HybridSearchTool
 from config.settings import Settings
-from services.ai_agent_service import run_ai_agent, run_ai_agent_with_rags
+from services.ai_agent_service import run_ai_agent, run_ragas
 
 settings = Settings()
 
@@ -538,36 +538,23 @@ async def exec_chatbot_ai_agent(
         ai_agent_tools = [hybrid_search_tool]
 
         # 4. AIエージェントの実行（RAGas評価の有無に応じて分岐）
+        agent_result = run_ai_agent(
+            query=request.query,
+            chat_history=request.chat_history,
+            ai_agent_setting=ai_agent_setting,
+            ai_agent_tools=ai_agent_tools,
+            langfuse_session_id=langfuse_session_id,
+        )
+
+        # RAGas実行
+        ragas_scores = None
         if request.is_run_ragas:
-
-            ragas_dataset_data = None
-            ragas_metrics_data = None
-            if request.ragas_setting and isinstance(request.ragas_setting, dict):
-                ragas_dataset_data = (
-                    request.ragas_setting.get("dataset")
-                    if isinstance(request.ragas_setting.get("dataset"), dict)
-                    else None
-                )
-                ragas_metrics_data = request.ragas_setting.get("metrics")
-
-            agent_result, ragas_scores = run_ai_agent_with_rags(
+            ragas_scores = run_ragas(
                 query=request.query,
-                chat_history=request.chat_history,
-                ai_agent_setting=ai_agent_setting,
-                ai_agent_tools=ai_agent_tools,
-                langfuse_session_id=langfuse_session_id,
-                ragas_dataset_data=ragas_dataset_data,
-                ragas_metrics_data=ragas_metrics_data,
+                agent_result=agent_result,
+                ragas_dataset_data=request.ragas_setting["dataset"],
+                ragas_metrics_data=request.ragas_setting["metrics"],
             )
-        else:
-            agent_result = run_ai_agent(
-                query=request.query,
-                chat_history=request.chat_history,
-                ai_agent_setting=ai_agent_setting,
-                ai_agent_tools=ai_agent_tools,
-                langfuse_session_id=langfuse_session_id,
-            )
-            ragas_scores = None
 
         # 5. レスポンスの作成 (実行結果の詳細情報構築(サブタスク詳細、統計情報), RAGasスコアのまとめ)
         execution_time = time.time() - start_time

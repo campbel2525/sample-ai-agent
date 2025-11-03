@@ -86,7 +86,7 @@ class Agent:
         openai_api_key: str,
         settings: AgentSetting | None = None,
         tools: list[BaseTool] = [],
-        max_challenge_count: int = 1,
+        max_challenge_count: int = 3,
         # チャット履歴の最大使用件数（Noneで全件）
         chat_history_max_turns: Optional[int] = None,
     ) -> None:

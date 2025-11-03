@@ -140,7 +140,9 @@ def main():
 
         st.subheader("RAGAS")
         is_run_ragas = st.checkbox("RAGASを実行する", value=DEFAULT_RUN_RAGAS)
-        ragas_reference = st.text_area("RAGAS reference (dataset.reference)", value="")
+        ragas_dataset_raw = st.text_area(
+            "RAGAS dataset (JSON)", value="", help='例: {"reference": "期待する正解テキスト"}'
+        )
         ragas_metrics = st.multiselect(
             "RAGAS metrics",
             options=["answer_relevancy", "answer_similarity"],
@@ -326,12 +328,16 @@ def main():
         def nvl(s: str) -> Optional[str]:
             return s if s else None
 
-        # RAGAS 実行可否と参照の整形
-        ragas_ref_trim = (ragas_reference or "").strip()
-        # チェックが入っているのに参照が空なら、APIバリデーションで422になるため事前に警告して送信しない
-        if is_run_ragas and not ragas_ref_trim:
-            st.warning("RAGASを実行するには 'reference' の入力が必要です。")
-            return
+        # RAGAS dataset の解析
+        ragas_dataset = parse_json_or_none("RAGAS dataset", ragas_dataset_raw)
+        # チェックが入っているのに dataset.reference が無ければ警告
+        if is_run_ragas:
+            ref_val = None
+            if isinstance(ragas_dataset, dict):
+                ref_val = ragas_dataset.get("reference")
+            if not ref_val:
+                st.warning("RAGASを実行するには 'RAGAS dataset' の JSON に reference が必要です。")
+                return
 
         # 送信可となった段階でユーザー発話を履歴に追加し、履歴を作成
         st.session_state.messages.append({"role": "user", "content": user_input})
@@ -420,7 +426,7 @@ def main():
 
         # ragas_setting（入れ子）
         ragas_setting = (
-            {"dataset": {"reference": ragas_ref_trim}, "metrics": ragas_metrics}
+            {"dataset": ragas_dataset, "metrics": ragas_metrics}
             if is_run_ragas
             else None
         )

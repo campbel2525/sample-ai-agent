@@ -108,6 +108,10 @@ AI エージェントは API 化されているため、API を実行しその�
 make init
 ```
 
+opensearch にデータが入ります
+
+- キアヌリーブスについての内容(`data/insert_data/test_data.txt`の中のテキスト)が 512 文字、128 文字の重複のチャンクされて OpenSearch の index にインサート
+
 3. 動作確認
 
 以下の URL をブラウザで開いて画面が表示されれば問題なし
@@ -121,15 +125,7 @@ make init
 - OpenSearch の管理画面
   - [http://localhost:5601/](http://localhost:5601/)
 
-3. OpenSearch にデータのセットアップ
-
-```
-make opensearch-setup
-```
-
-キアヌリーブスについての内容(`data/insert_data/test_data.txt`の中のテキスト)が 512 文字、128 文字の重複のチャンクされて OpenSearch の index にインサート
-
-4. AI エージェント API の起動
+5. AI エージェント API の起動
 
 ```
 make ai-agent-run

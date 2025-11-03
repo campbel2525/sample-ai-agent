@@ -85,17 +85,12 @@ def run_ai_agent(
     return agent_result
 
 
-def run_ai_agent_with_rags(
+def run_ragas(
     query: str,
-    chat_history: list[ChatCompletionMessageParam],
-    ai_agent_setting: AgentSetting,
-    ai_agent_tools: Any,
-    ai_agent_max_challenge_count: int = 3,
-    langfuse_session_id: Optional[str] = None,
-    langfuse_trace_name: str = "ai_agent_execution",
+    agent_result: AgentResult,
     ragas_dataset_data: Optional[Dict[str, str]] = None,
     ragas_metrics_data: Optional[Sequence[Any]] = None,
-) -> Tuple[AgentResult, EvaluationResult]:
+) -> EvaluationResult:
     """
     Langfuse を介して AI エージェントを実行し、任意で RAGAS による回答評価を行います。
 
@@ -126,17 +121,6 @@ def run_ai_agent_with_rags(
         is_run_ragas=False の場合は AgentResult を返し、
         True の場合は (AgentResult, EvaluationResult) を返す。
     """
-
-    # AIエージェントの実行
-    agent_result = run_ai_agent(
-        query=query,
-        chat_history=chat_history,
-        ai_agent_setting=ai_agent_setting,
-        ai_agent_tools=ai_agent_tools,
-        ai_agent_max_challenge_count=ai_agent_max_challenge_count,
-        langfuse_session_id=langfuse_session_id,
-        langfuse_trace_name=langfuse_trace_name,
-    )
 
     # RAGAS評価の実行
     ragas_dataset = []
@@ -174,4 +158,4 @@ def run_ai_agent_with_rags(
         show_progress=True,
     )
 
-    return agent_result, ragas_scores
+    return ragas_scores
