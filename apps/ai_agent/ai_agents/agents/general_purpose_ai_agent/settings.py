@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 # planner
-PLANNER_MODEL_NAME: str = "gpt-4o-2024-08-06"
+PLANNER_MODEL_NAME: str = "gpt-4o-mini"  # gpt-4o-2024-08-06
 PLANNER_MODEL_PARAMS: Dict[str, Any] = {"temperature": 0, "seed": 0}
 PLANNER_SYSTEM_PROMPT = """
 # 役割
@@ -51,7 +51,7 @@ PLANNER_USER_PROMPT = """
 """  # noqa E501
 
 # subtask select tool
-SUBTASK_TOOL_SELECTION_MODEL_NAME: str = "gpt-4o-2024-08-06"
+SUBTASK_TOOL_SELECTION_MODEL_NAME: str = "gpt-4o-mini"  # gpt-4o-2024-08-06
 SUBTASK_TOOL_SELECTION_MODEL_PARAMS: Dict[str, Any] = {"temperature": 0, "seed": 0}
 SUBTASK_TOOL_SELECTION_SYSTEM_PROMPT = """
 あなたはRAGチャットボットのサブタスク実行を担当するエージェントです。
@@ -108,7 +108,7 @@ SUBTASK_TOOL_SELECTION_USER_PROMPT = """
 """  # noqa E501
 
 # subtask reflection
-SUBTASK_REFLECTION_MODEL_NAME: str = "gpt-4o-2024-08-06"
+SUBTASK_REFLECTION_MODEL_NAME: str = "gpt-4o-mini"  # gpt-4o-2024-08-06
 SUBTASK_REFLECTION_MODEL_PARAMS: Dict[str, Any] = {"temperature": 0, "seed": 0}
 SUBTASK_REFLECTION_USER_PROMPT = """
 注意: この出力は内部用です。ユーザーに話しかけないでください。質問しないでください。
@@ -125,7 +125,7 @@ SUBTASK_REFLECTION_USER_PROMPT = """
 """  # noqa E501
 
 # subtask retry answer
-SUBTASK_RETRY_ANSWER_MODEL_NAME: str = "gpt-4o-2024-08-06"
+SUBTASK_RETRY_ANSWER_MODEL_NAME: str = "gpt-4o-mini"  # gpt-4o-2024-08-06
 SUBTASK_RETRY_ANSWER_MODEL_PARAMS: Dict[str, Any] = {"temperature": 0, "seed": 0}
 SUBTASK_RETRY_ANSWER_USER_PROMPT = """
 注意: この出力は内部用です。ユーザーに話しかけないでください。質問しないでください。
@@ -136,7 +136,7 @@ SUBTASK_RETRY_ANSWER_USER_PROMPT = """
 """  # noqa E501
 
 # final answer
-FINAL_ANSWER_MODEL_NAME: str = "gpt-4o-2024-08-06"
+FINAL_ANSWER_MODEL_NAME: str = "gpt-4o-mini"  # gpt-4o-2024-08-06
 FINAL_ANSWER_MODEL_PARAMS: Dict[str, Any] = {"temperature": 0, "seed": 0}
 FINAL_ANSWER_SYSTEM_PROMPT = """
 あなたはRAGチャットボットの最終回答担当です

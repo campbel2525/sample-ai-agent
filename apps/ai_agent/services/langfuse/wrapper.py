@@ -59,7 +59,7 @@ def run_agent_with_langfuse(
     if lf is not None:
         with lf.start_as_current_span(name=langfuse_trace_name) as span:
             try:
-                # AgentSettings の概要（存在すれば）をメタデータに付与
+                # AgentSetting の概要（存在すれば）をメタデータに付与
                 settings_meta = None
                 try:
                     s = getattr(agent, "settings", None)

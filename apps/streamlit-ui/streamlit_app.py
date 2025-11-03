@@ -138,9 +138,15 @@ def main():
         st.subheader("API設定")
         st.caption("詳しくは http://localhost:8000/docs 参照")
 
-        st.subheader("RAGas")
-        is_run_ragas = st.checkbox("RAGasを実行する", value=DEFAULT_RUN_RAGAS)
-        ragas_reference = st.text_area("RAGas reference", value="")
+        st.subheader("RAGAS")
+        is_run_ragas = st.checkbox("RAGASを実行する", value=DEFAULT_RUN_RAGAS)
+        ragas_reference = st.text_area("RAGAS reference (dataset.reference)", value="")
+        ragas_metrics = st.multiselect(
+            "RAGAS metrics",
+            options=["answer_relevancy", "answer_similarity"],
+            default=[],
+            help="評価に使用するメトリクスを選択",
+        )
 
         st.subheader("モデル設定")
         planner_model_name = st.text_input(
@@ -320,50 +326,114 @@ def main():
         def nvl(s: str) -> Optional[str]:
             return s if s else None
 
-        # RAGas 実行可否と参照の整形
+        # RAGAS 実行可否と参照の整形
         ragas_ref_trim = (ragas_reference or "").strip()
         # チェックが入っているのに参照が空なら、APIバリデーションで422になるため事前に警告して送信しない
         if is_run_ragas and not ragas_ref_trim:
-            st.warning("RAGasを実行するには 'RAGas reference' の入力が必要です。")
+            st.warning("RAGASを実行するには 'reference' の入力が必要です。")
             return
 
         # 送信可となった段階でユーザー発話を履歴に追加し、履歴を作成
         st.session_state.messages.append({"role": "user", "content": user_input})
         chat_history = to_chat_history(st.session_state.messages[:-1])
 
-        payload: Dict[str, Any] = {
-            "query": user_input,
-            "chat_history": chat_history,
-            "planner_model_name": nvl(planner_model_name),
-            "subtask_tool_selection_model_name": nvl(subtask_tool_selection_model_name),
-            "subtask_answer_model_name": nvl(subtask_answer_model_name),
-            "subtask_reflection_model_name": nvl(subtask_reflection_model_name),
-            "final_answer_model_name": nvl(final_answer_model_name),
-            "planner_params": planner_params,
-            "subtask_tool_selection_model_params": subtask_tool_selection_model_params,
-            "subtask_answer_model_params": subtask_answer_model_params,
-            "subtask_reflection_model_params": subtask_reflection_model_params,
-            "final_answer_model_params": final_answer_model_params,
-            "planner_system_prompt": nvl(ai_agent_planner_system_prompt),
-            "planner_user_prompt": nvl(ai_agent_planner_user_prompt),
-            "subtask_tool_selection_system_prompt": nvl(
-                ai_agent_subtask_select_tool_system_prompt
+        # ai_agent_setting（入れ子）を構築（Noneは除外）
+        def drop_none(d: Dict[str, Any]) -> Dict[str, Any]:
+            """None を除去し、空の dict も再帰的に除去するユーティリティ。
+
+            - 値が None のキーは削除
+            - 値が dict の場合は再帰的に処理し、空になった dict は削除
+            """
+            cleaned: Dict[str, Any] = {}
+            for k, v in d.items():
+                if v is None:
+                    continue
+                if isinstance(v, dict):
+                    v = drop_none(v)
+                    if not v:  # 空の辞書は送らない（Pydanticの必須項目バリデーション回避）
+                        continue
+                cleaned[k] = v
+            return cleaned
+
+        ai_agent_setting: Dict[str, Any] = {
+            "planner": drop_none(
+                {
+                    "model_name": nvl(planner_model_name),
+                    "model_params": planner_params,
+                    "prompt": drop_none(
+                        {
+                            "system_prompt": nvl(ai_agent_planner_system_prompt),
+                            "user_prompt": nvl(ai_agent_planner_user_prompt),
+                        }
+                    ),
+                }
             ),
-            "subtask_tool_selection_user_prompt": nvl(
-                ai_agent_subtask_select_tool_user_prompt
+            "subtask_select_tool": drop_none(
+                {
+                    "model_name": nvl(subtask_tool_selection_model_name),
+                    "model_params": subtask_tool_selection_model_params,
+                    "prompt": drop_none(
+                        {
+                            "system_prompt": nvl(
+                                ai_agent_subtask_select_tool_system_prompt
+                            ),
+                            "user_prompt": nvl(
+                                ai_agent_subtask_select_tool_user_prompt
+                            ),
+                        }
+                    ),
+                }
             ),
-            "subtask_reflection_user_prompt": nvl(
-                ai_agent_subtask_reflection_user_prompt
+            "subtask_reflection": drop_none(
+                {
+                    "model_name": nvl(subtask_reflection_model_name),
+                    "model_params": subtask_reflection_model_params,
+                    "prompt": drop_none(
+                        {"user_prompt": nvl(ai_agent_subtask_reflection_user_prompt)}
+                    ),
+                }
             ),
-            "subtask_retry_answer_user_prompt": nvl(
-                ai_agent_subtask_retry_answer_user_prompt
+            # 回答生成は subtask_retry_answer 設定を使用（UIの subtask_answer_* をマッピング）
+            "subtask_retry_answer": drop_none(
+                {
+                    "model_name": nvl(subtask_answer_model_name),
+                    "model_params": subtask_answer_model_params,
+                    "prompt": drop_none(
+                        {"user_prompt": nvl(ai_agent_subtask_retry_answer_user_prompt)}
+                    ),
+                }
             ),
-            "final_answer_system_prompt": nvl(ai_agent_final_answer_system_prompt),
-            "final_answer_user_prompt": nvl(ai_agent_final_answer_user_prompt),
-            # チェックボックスの値をそのまま渡す（事前に参照の必須チェック済み）
-            "is_run_ragas": is_run_ragas,
-            "ragas_reference": ragas_ref_trim if ragas_ref_trim else None,
+            "final_answer": drop_none(
+                {
+                    "model_name": nvl(final_answer_model_name),
+                    "model_params": final_answer_model_params,
+                    "prompt": drop_none(
+                        {
+                            "system_prompt": nvl(ai_agent_final_answer_system_prompt),
+                            "user_prompt": nvl(ai_agent_final_answer_user_prompt),
+                        }
+                    ),
+                }
+            ),
         }
+        ai_agent_setting = drop_none(ai_agent_setting)
+
+        # ragas_setting（入れ子）
+        ragas_setting = (
+            {"dataset": {"reference": ragas_ref_trim}, "metrics": ragas_metrics}
+            if is_run_ragas
+            else None
+        )
+
+        payload: Dict[str, Any] = drop_none(
+            {
+                "query": user_input,
+                "chat_history": chat_history,
+                "ai_agent_setting": ai_agent_setting,
+                "is_run_ragas": is_run_ragas,
+                "ragas_setting": ragas_setting,
+            }
+        )
 
         st.session_state["pending_payload"] = payload
         st.rerun()

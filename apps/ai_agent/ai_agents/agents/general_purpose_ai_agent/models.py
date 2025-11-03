@@ -115,7 +115,7 @@ class PhaseSettings(GenericModel, Generic[TPrompt]):
     )
 
 
-class AgentSettings(BaseModel):
+class AgentSetting(BaseModel):
     planner: PhaseSettings[PromptSystemUser]
     subtask_select_tool: PhaseSettings[PromptSystemUser]
     subtask_reflection: PhaseSettings[PromptUserOnly]
@@ -124,6 +124,19 @@ class AgentSettings(BaseModel):
 
     def __init__(
         self,
+        # nested accept (優先)
+        planner: PhaseSettings[PromptSystemUser] | Mapping[str, Any] | None = None,
+        subtask_select_tool: (
+            PhaseSettings[PromptSystemUser] | Mapping[str, Any] | None
+        ) = None,
+        subtask_reflection: (
+            PhaseSettings[PromptUserOnly] | Mapping[str, Any] | None
+        ) = None,
+        subtask_retry_answer: (
+            PhaseSettings[PromptUserOnly] | Mapping[str, Any] | None
+        ) = None,
+        final_answer: PhaseSettings[PromptSystemUser] | Mapping[str, Any] | None = None,
+        # flat params (後方互換)
         # planner
         planner_model_name: str | None = None,
         planner_model_params: Mapping[str, Any] | None = None,
@@ -149,125 +162,147 @@ class AgentSettings(BaseModel):
         final_answer_user_prompt: str | None = None,
     ):
         # planner
-        planner_phase: PhaseSettings[PromptSystemUser] = PhaseSettings(
-            model_name=(
-                PLANNER_MODEL_NAME if planner_model_name is None else planner_model_name
-            ),
-            model_params=(
-                dict(PLANNER_MODEL_PARAMS)
-                if planner_model_params is None
-                else dict(planner_model_params)
-            ),
-            prompt=PromptSystemUser(
-                system_prompt=(
-                    PLANNER_SYSTEM_PROMPT
-                    if planner_system_prompt is None
-                    else planner_system_prompt
+        planner_phase_payload: Any = (
+            planner
+            if planner is not None
+            else PhaseSettings(
+                model_name=(
+                    PLANNER_MODEL_NAME
+                    if planner_model_name is None
+                    else planner_model_name
                 ),
-                user_prompt=(
-                    PLANNER_USER_PROMPT
-                    if planner_user_prompt is None
-                    else planner_user_prompt
+                model_params=(
+                    dict(PLANNER_MODEL_PARAMS)
+                    if planner_model_params is None
+                    else dict(planner_model_params)
                 ),
-            ),
+                prompt=PromptSystemUser(
+                    system_prompt=(
+                        PLANNER_SYSTEM_PROMPT
+                        if planner_system_prompt is None
+                        else planner_system_prompt
+                    ),
+                    user_prompt=(
+                        PLANNER_USER_PROMPT
+                        if planner_user_prompt is None
+                        else planner_user_prompt
+                    ),
+                ),
+            )
         )
         # subtask_tool_selection
-        subtask_select_tool_phase: PhaseSettings[PromptSystemUser] = PhaseSettings(
-            model_name=(
-                SUBTASK_TOOL_SELECTION_MODEL_NAME
-                if subtask_tool_selection_model_name is None
-                else subtask_tool_selection_model_name
-            ),
-            model_params=(
-                dict(SUBTASK_TOOL_SELECTION_MODEL_PARAMS)
-                if subtask_tool_selection_model_params is None
-                else dict(subtask_tool_selection_model_params)
-            ),
-            prompt=PromptSystemUser(
-                system_prompt=(
-                    SUBTASK_TOOL_SELECTION_SYSTEM_PROMPT
-                    if subtask_tool_selection_system_prompt is None
-                    else subtask_tool_selection_system_prompt
+        subtask_select_tool_phase_payload: Any = (
+            subtask_select_tool
+            if subtask_select_tool is not None
+            else PhaseSettings(
+                model_name=(
+                    SUBTASK_TOOL_SELECTION_MODEL_NAME
+                    if subtask_tool_selection_model_name is None
+                    else subtask_tool_selection_model_name
                 ),
-                user_prompt=(
-                    SUBTASK_TOOL_SELECTION_USER_PROMPT
-                    if subtask_tool_selection_user_prompt is None
-                    else subtask_tool_selection_user_prompt
+                model_params=(
+                    dict(SUBTASK_TOOL_SELECTION_MODEL_PARAMS)
+                    if subtask_tool_selection_model_params is None
+                    else dict(subtask_tool_selection_model_params)
                 ),
-            ),
+                prompt=PromptSystemUser(
+                    system_prompt=(
+                        SUBTASK_TOOL_SELECTION_SYSTEM_PROMPT
+                        if subtask_tool_selection_system_prompt is None
+                        else subtask_tool_selection_system_prompt
+                    ),
+                    user_prompt=(
+                        SUBTASK_TOOL_SELECTION_USER_PROMPT
+                        if subtask_tool_selection_user_prompt is None
+                        else subtask_tool_selection_user_prompt
+                    ),
+                ),
+            )
         )
         # subtask_reflection
-        subtask_reflection_phase: PhaseSettings[PromptUserOnly] = PhaseSettings(
-            model_name=(
-                SUBTASK_REFLECTION_MODEL_NAME
-                if subtask_reflection_model_name is None
-                else subtask_reflection_model_name
-            ),
-            model_params=(
-                dict(SUBTASK_REFLECTION_MODEL_PARAMS)
-                if subtask_reflection_model_params is None
-                else dict(subtask_reflection_model_params)
-            ),
-            prompt=PromptUserOnly(
-                user_prompt=(
-                    SUBTASK_REFLECTION_USER_PROMPT
-                    if subtask_reflection_user_prompt is None
-                    else subtask_reflection_user_prompt
+        subtask_reflection_phase_payload: Any = (
+            subtask_reflection
+            if subtask_reflection is not None
+            else PhaseSettings(
+                model_name=(
+                    SUBTASK_REFLECTION_MODEL_NAME
+                    if subtask_reflection_model_name is None
+                    else subtask_reflection_model_name
                 ),
-            ),
+                model_params=(
+                    dict(SUBTASK_REFLECTION_MODEL_PARAMS)
+                    if subtask_reflection_model_params is None
+                    else dict(subtask_reflection_model_params)
+                ),
+                prompt=PromptUserOnly(
+                    user_prompt=(
+                        SUBTASK_REFLECTION_USER_PROMPT
+                        if subtask_reflection_user_prompt is None
+                        else subtask_reflection_user_prompt
+                    ),
+                ),
+            )
         )
         # subtask_retry_answer（モデルは subtask_answer を既定として流用する例）
-        subtask_retry_answer_phase: PhaseSettings[PromptUserOnly] = PhaseSettings(
-            model_name=(
-                SUBTASK_RETRY_ANSWER_MODEL_NAME
-                if subtask_retry_answer_model_name is None
-                else subtask_retry_answer_model_name
-            ),
-            model_params=(
-                dict(SUBTASK_RETRY_ANSWER_MODEL_PARAMS)
-                if subtask_retry_answer_model_params is None
-                else dict(subtask_retry_answer_model_params)
-            ),
-            prompt=PromptUserOnly(
-                user_prompt=(
-                    SUBTASK_RETRY_ANSWER_USER_PROMPT
-                    if subtask_retry_answer_user_prompt is None
-                    else subtask_retry_answer_user_prompt
+        subtask_retry_answer_phase_payload: Any = (
+            subtask_retry_answer
+            if subtask_retry_answer is not None
+            else PhaseSettings(
+                model_name=(
+                    SUBTASK_RETRY_ANSWER_MODEL_NAME
+                    if subtask_retry_answer_model_name is None
+                    else subtask_retry_answer_model_name
                 ),
-            ),
+                model_params=(
+                    dict(SUBTASK_RETRY_ANSWER_MODEL_PARAMS)
+                    if subtask_retry_answer_model_params is None
+                    else dict(subtask_retry_answer_model_params)
+                ),
+                prompt=PromptUserOnly(
+                    user_prompt=(
+                        SUBTASK_RETRY_ANSWER_USER_PROMPT
+                        if subtask_retry_answer_user_prompt is None
+                        else subtask_retry_answer_user_prompt
+                    ),
+                ),
+            )
         )
         # final_answer
-        final_answer_phase: PhaseSettings[PromptSystemUser] = PhaseSettings(
-            model_name=(
-                FINAL_ANSWER_MODEL_NAME
-                if final_answer_model_name is None
-                else final_answer_model_name
-            ),
-            model_params=(
-                dict(FINAL_ANSWER_MODEL_PARAMS)
-                if final_answer_model_params is None
-                else dict(final_answer_model_params)
-            ),
-            prompt=PromptSystemUser(
-                system_prompt=(
-                    FINAL_ANSWER_SYSTEM_PROMPT
-                    if final_answer_system_prompt is None
-                    else final_answer_system_prompt
+        final_answer_phase_payload: Any = (
+            final_answer
+            if final_answer is not None
+            else PhaseSettings(
+                model_name=(
+                    FINAL_ANSWER_MODEL_NAME
+                    if final_answer_model_name is None
+                    else final_answer_model_name
                 ),
-                user_prompt=(
-                    FINAL_ANSWER_USER_PROMPT
-                    if final_answer_user_prompt is None
-                    else final_answer_user_prompt
+                model_params=(
+                    dict(FINAL_ANSWER_MODEL_PARAMS)
+                    if final_answer_model_params is None
+                    else dict(final_answer_model_params)
                 ),
-            ),
+                prompt=PromptSystemUser(
+                    system_prompt=(
+                        FINAL_ANSWER_SYSTEM_PROMPT
+                        if final_answer_system_prompt is None
+                        else final_answer_system_prompt
+                    ),
+                    user_prompt=(
+                        FINAL_ANSWER_USER_PROMPT
+                        if final_answer_user_prompt is None
+                        else final_answer_user_prompt
+                    ),
+                ),
+            )
         )
 
         # BaseModel の初期化を正しく行い、
         # Pydantic v2 の内部属性（model_fields_set など）をセットする
         super().__init__(
-            planner=planner_phase,
-            subtask_select_tool=subtask_select_tool_phase,
-            subtask_reflection=subtask_reflection_phase,
-            subtask_retry_answer=subtask_retry_answer_phase,
-            final_answer=final_answer_phase,
+            planner=planner_phase_payload,
+            subtask_select_tool=subtask_select_tool_phase_payload,
+            subtask_reflection=subtask_reflection_phase_payload,
+            subtask_retry_answer=subtask_retry_answer_phase_payload,
+            final_answer=final_answer_phase_payload,
         )

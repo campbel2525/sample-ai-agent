@@ -27,7 +27,7 @@ from pydantic import BaseModel
 from .custom_logger import setup_logger
 from .models import (
     AgentResult,
-    AgentSettings,
+    AgentSetting,
     Plan,
     ReflectionResult,
     Subtask,
@@ -84,9 +84,9 @@ class Agent:
         self,
         openai_base_url: str,
         openai_api_key: str,
-        settings: AgentSettings | None = None,
+        settings: AgentSetting | None = None,
         tools: list[BaseTool] = [],
-        max_challenge_count: int = 3,
+        max_challenge_count: int = 1,
         # チャット履歴の最大使用件数（Noneで全件）
         chat_history_max_turns: Optional[int] = None,
     ) -> None:
@@ -95,13 +95,13 @@ class Agent:
         Args:
             openai_base_url (str): OpenAI互換エンドポイントのベースURL。
             openai_api_key (str): OpenAI APIキー。
-            settings (AgentSettings | None): 各フェーズのモデル/プロンプト設定。未指定時は既定値。
+            settings (AgentSetting | None): 各フェーズのモデル/プロンプト設定。未指定時は既定値。
             tools (list[BaseTool]): 利用可能なツール一覧（LangChain Tool）。
             max_challenge_count (int): 内省に基づくリトライの最大回数。
         """
         self.openai_base_url = openai_base_url
         self.openai_api_key = openai_api_key
-        self.settings = settings or AgentSettings()
+        self.settings = settings or AgentSetting()
         self.tools = tools
         self.tool_map = {tool.name: tool for tool in tools}
 
