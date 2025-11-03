@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence
 
 from openai.types.chat import ChatCompletionMessageParam
 from ragas import evaluate
@@ -41,7 +41,7 @@ def run_ai_agent(
     ai_agent_setting : AgentSetting
         フェーズ別のプロンプトとモデル設定。
     query : str
-        ユーザーからの質問。
+        ユーザー入力
     is_run_ragas : bool, default True
         True の場合はエージェント実行後に RAGAS 評価を実施。
         False の場合はエージェント実行結果のみ返す。
@@ -96,30 +96,19 @@ def run_ragas(
 
     パラメータ
     ----------
-    tools : Any
-        エージェントに渡すツール群。
-    ai_agent_setting : AgentSetting
-        フェーズ別のプロンプトとモデル設定。
     query : str
-        ユーザーからの質問。
-    is_run_ragas : bool, default True
-        True の場合はエージェント実行後に RAGAS 評価を実施。
-        False の場合はエージェント実行結果のみ返す。
-    # ragas_retrieved_contexts : Optional[Sequence[str]]
-    #     検索で取得したコンテキスト群。
-    ragas_reference : Optional[str]
-        正解参照テキスト。
-    ragas_reference_contexts : Optional[Sequence[str]]
-        参照側のコンテキスト群。
-    ragas_metrics : Optional[Sequence[Any]]
+        ユーザー入力
+    agent_result : AgentResult
+        AIエージェントの実行結果。
+    ragas_dataset_data : Optional[Dict[str, str]]
+        RAGAS 用のデータセット情報。
+    ragas_metrics_data : Optional[Sequence[Any]]
         使用する RAGAS の評価指標。未指定時は
         [answer_relevancy, answer_similarity] を用いる。
 
     戻り値
     ------
-    Union[AgentResult, Tuple[AgentResult, EvaluationResult]]
-        is_run_ragas=False の場合は AgentResult を返し、
-        True の場合は (AgentResult, EvaluationResult) を返す。
+    EvaluationResult
     """
 
     # RAGAS評価の実行

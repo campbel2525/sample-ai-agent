@@ -191,19 +191,19 @@ class Agent:
         logger.info("🚀 Starting plan generation process...")
 
         # メッセージ作成
+        planner_prompt = self.settings.planner.prompt
+        conversation_context = self._format_chat_history(state.get("chat_history", []))
         messages: list[ChatCompletionMessageParam] = [
             {
                 "role": "system",
-                "content": self.settings.planner.prompt.system_prompt.format(
-                    conversation_context=self._format_chat_history(
-                        state.get("chat_history", [])
-                    )
+                "content": planner_prompt.system_prompt.replace(
+                    "{conversation_context}", conversation_context
                 ),
             },
             {
                 "role": "user",
-                "content": self.settings.planner.prompt.user_prompt.format(
-                    query=state["query"]
+                "content": planner_prompt.user_prompt.replace(
+                    "{query}", str(state["query"])
                 ),
             },
         ]
@@ -253,18 +253,19 @@ class Agent:
         # リトライされたかどうかでプロンプトを切り替える
         if state["challenge_count"] == 0:
             logger.debug("Creating user prompt for tool selection...")
+            subtask_prompt = self.settings.subtask_select_tool.prompt
             messages = [
                 {
                     "role": "system",
-                    "content": self.settings.subtask_select_tool.prompt.system_prompt,
+                    "content": subtask_prompt.system_prompt,
                 },
                 {
                     "role": "user",
-                    "content": self.settings.subtask_select_tool.prompt.user_prompt.format(  # NOQA: E501
-                        query=state["query"],
-                        plan=state["plan"],
-                        subtask=state["subtask"],
-                    ),
+                    "content": subtask_prompt.user_prompt.replace(
+                        "{query}", str(state["query"])
+                    )
+                    .replace("{plan}", str(state["plan"]))
+                    .replace("{subtask}", str(state["subtask"])),
                 },
             ]
             try:
@@ -500,20 +501,20 @@ class Agent:
         subtask_results = [
             (result.task_name, result.subtask_answer) for result in subtask_results_seq
         ]
+        final_answer_prompt = self.settings.final_answer.prompt
+        conversation_context = self._format_chat_history(state.get("chat_history", []))
         messages: list[ChatCompletionMessageParam] = [
             {
                 "role": "system",
-                "content": self.settings.final_answer.prompt.system_prompt.format(
-                    conversation_context=self._format_chat_history(
-                        state.get("chat_history", [])
-                    ),
-                    subtask_results=str(subtask_results),
-                ),
+                "content": final_answer_prompt.system_prompt.replace(
+                    "{conversation_context}",
+                    conversation_context,
+                ).replace("{subtask_results}", str(subtask_results)),
             },
             {
                 "role": "user",
-                "content": self.settings.final_answer.prompt.user_prompt.format(
-                    query=state["query"],
+                "content": final_answer_prompt.user_prompt.replace(
+                    "{query}", str(state["query"])
                 ),
             },
         ]

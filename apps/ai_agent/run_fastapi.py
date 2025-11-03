@@ -490,8 +490,9 @@ async def exec_chatbot_ai_agent(
     1. 実行時間計測開始とLangfuseセッションID生成
     2. AIエージェントの設定（プランナー、サブタスク、最終回答作成用, LLMの設定）
     3. ツールの準備（HybridSearchTool）
-    4. AIエージェントの実行（RAGas評価の有無に応じて分岐）
-    5. レスポンスの作成 (実行結果の詳細情報構築(サブタスク詳細、統計情報), RAGasスコアのまとめ)
+    4. AIエージェントの実行
+    5. RAGas実行
+    6. レスポンスの作成 (実行結果の詳細情報構築(サブタスク詳細、統計情報), RAGasスコアのまとめ)
 
     ## レスポンス例
 
@@ -537,7 +538,7 @@ async def exec_chatbot_ai_agent(
         )
         ai_agent_tools = [hybrid_search_tool]
 
-        # 4. AIエージェントの実行（RAGas評価の有無に応じて分岐）
+        # 4. AIエージェントの実行
         agent_result = run_ai_agent(
             query=request.query,
             chat_history=request.chat_history,
@@ -546,17 +547,20 @@ async def exec_chatbot_ai_agent(
             langfuse_session_id=langfuse_session_id,
         )
 
-        # RAGas実行
+        # 5. RAGas実行
         ragas_scores = None
+        ragas_setting = request.ragas_setting
+        ragas_dataset_data = ragas_setting["dataset"] if ragas_setting else None
+        ragas_metrics_data = ragas_setting["metrics"] if ragas_setting else None
         if request.is_run_ragas:
             ragas_scores = run_ragas(
                 query=request.query,
                 agent_result=agent_result,
-                ragas_dataset_data=request.ragas_setting["dataset"],
-                ragas_metrics_data=request.ragas_setting["metrics"],
+                ragas_dataset_data=ragas_dataset_data,
+                ragas_metrics_data=ragas_metrics_data,
             )
 
-        # 5. レスポンスの作成 (実行結果の詳細情報構築(サブタスク詳細、統計情報), RAGasスコアのまとめ)
+        # 6. レスポンスの作成 (実行結果の詳細情報構築(サブタスク詳細、統計情報), RAGasスコアのまとめ)
         execution_time = time.time() - start_time
         return get_response(
             request,
