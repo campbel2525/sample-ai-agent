@@ -113,6 +113,70 @@ class Agent:
 
         self.max_challenge_count = max_challenge_count
 
+    def run_agent(
+        self, query: str, chat_history: list[ChatCompletionMessageParam] = []
+    ) -> AgentResult:
+        """エージェントを実行する
+
+        Args:
+            query (str): 入力の質問
+            chat_history (list[dict], optional): チャット履歴
+
+        Returns:
+            AgentResult: エージェントの実行結果
+        """
+
+        app = self.create_graph()
+        result = app.invoke(
+            {
+                "query": query,
+                "chat_history": chat_history,
+                "current_step": 0,
+            }
+        )
+
+        agent_result = AgentResult(
+            query=query,
+            plan=Plan(subtasks=result["plan"]),
+            subtasks=result["subtask_results"],
+            answer=result["last_answer"],
+        )
+
+        return agent_result
+
+    def create_graph(self) -> Pregel:
+        """エージェントのメイングラフを作成する
+
+        Returns:
+            Pregel: エージェントのメイングラフ
+        """
+        workflow = StateGraph(AgentState)
+
+        # Add the plan node
+        workflow.add_node("create_plan", self.create_plan)
+
+        # Add the execution step
+        workflow.add_node("execute_subtasks", self._execute_subgraph)
+
+        workflow.add_node("create_answer", self.create_answer)
+
+        workflow.add_edge(START, "create_plan")
+
+        # From plan we go to agent
+        workflow.add_conditional_edges(
+            "create_plan",
+            self._should_continue_exec_subtasks,
+        )
+
+        # From agent, we replan
+        workflow.add_edge("execute_subtasks", "create_answer")
+
+        workflow.set_finish_point("create_answer")
+
+        app = workflow.compile()
+
+        return app
+
     def create_plan(self, state: AgentState) -> dict:
         """1. 計画作成｜質問分解とサブタスクリスト作成
 
@@ -574,70 +638,6 @@ class Agent:
         app = workflow.compile()
 
         return app
-
-    def create_graph(self) -> Pregel:
-        """エージェントのメイングラフを作成する
-
-        Returns:
-            Pregel: エージェントのメイングラフ
-        """
-        workflow = StateGraph(AgentState)
-
-        # Add the plan node
-        workflow.add_node("create_plan", self.create_plan)
-
-        # Add the execution step
-        workflow.add_node("execute_subtasks", self._execute_subgraph)
-
-        workflow.add_node("create_answer", self.create_answer)
-
-        workflow.add_edge(START, "create_plan")
-
-        # From plan we go to agent
-        workflow.add_conditional_edges(
-            "create_plan",
-            self._should_continue_exec_subtasks,
-        )
-
-        # From agent, we replan
-        workflow.add_edge("execute_subtasks", "create_answer")
-
-        workflow.set_finish_point("create_answer")
-
-        app = workflow.compile()
-
-        return app
-
-    def run_agent(
-        self, query: str, chat_history: list[ChatCompletionMessageParam] = []
-    ) -> AgentResult:
-        """エージェントを実行する
-
-        Args:
-            query (str): 入力の質問
-            chat_history (list[dict], optional): チャット履歴
-
-        Returns:
-            AgentResult: エージェントの実行結果
-        """
-
-        app = self.create_graph()
-        result = app.invoke(
-            {
-                "query": query,
-                "chat_history": chat_history,
-                "current_step": 0,
-            }
-        )
-
-        agent_result = AgentResult(
-            query=query,
-            plan=Plan(subtasks=result["plan"]),
-            subtasks=result["subtask_results"],
-            answer=result["last_answer"],
-        )
-
-        return agent_result
 
     def _chat_parse(
         self,
