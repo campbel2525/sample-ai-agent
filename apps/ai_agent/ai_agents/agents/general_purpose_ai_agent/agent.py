@@ -153,12 +153,12 @@ class Agent:
         workflow = StateGraph(AgentState)
 
         # Add the plan node
-        workflow.add_node("create_plan", self.create_plan)
+        workflow.add_node("create_plan", self._create_plan)
 
         # Add the execution step
         workflow.add_node("execute_subtasks", self._execute_subgraph)
 
-        workflow.add_node("create_answer", self.create_answer)
+        workflow.add_node("create_answer", self._create_answer)
 
         workflow.add_edge(START, "create_plan")
 
@@ -177,7 +177,7 @@ class Agent:
 
         return app
 
-    def create_plan(self, state: AgentState) -> dict:
+    def _create_plan(self, state: AgentState) -> dict:
         """1. 計画作成｜質問分解とサブタスクリスト作成
 
         Args:
@@ -224,7 +224,7 @@ class Agent:
         # 生成した計画を返し、状態を更新する
         return {"plan": plan.subtasks}
 
-    def select_tools(self, state: AgentSubGraphState) -> dict:
+    def _select_tools(self, state: AgentSubGraphState) -> dict:
         """2.1 ツール選択｜LLMが適切なツールを判断・選択
 
         Args:
@@ -312,7 +312,7 @@ class Agent:
 
         return {"messages": messages}
 
-    def execute_tools(self, state: AgentSubGraphState) -> dict:
+    def _execute_tools(self, state: AgentSubGraphState) -> dict:
         """2.2 ツール実行｜選択したツールを実行。
 
         select_tools の結果（直前メッセージ）に含まれる `tool_calls` を順に実行し、
@@ -367,7 +367,7 @@ class Agent:
         logger.info("Tool execution complete!")
         return {"messages": messages, "tool_results": [tool_results]}
 
-    def create_subtask_answer(self, state: AgentSubGraphState) -> dict:
+    def _create_subtask_answer(self, state: AgentSubGraphState) -> dict:
         """2.3 回答生成｜ツール実行結果から回答を作成
 
         Args:
@@ -411,7 +411,7 @@ class Agent:
             "subtask_answer": subtask_answer,
         }
 
-    def reflect_subtask(self, state: AgentSubGraphState) -> dict:
+    def _reflect_subtask(self, state: AgentSubGraphState) -> dict:
         """2.4 自己修正｜回答の適切性評価と原因分析→再試行指示
 
         Args:
@@ -472,7 +472,7 @@ class Agent:
         logger.info("Reflection complete!")
         return update_state
 
-    def create_answer(self, state: AgentState) -> dict:
+    def _create_answer(self, state: AgentState) -> dict:
         """3. 最終回答作成｜全サブタスク回答を統合
 
         Args:
@@ -609,16 +609,16 @@ class Agent:
         workflow = StateGraph(AgentSubGraphState)
 
         # ツール選択ノードを追加
-        workflow.add_node("select_tools", self.select_tools)
+        workflow.add_node("select_tools", self._select_tools)
 
         # ツール実行ノードを追加
-        workflow.add_node("execute_tools", self.execute_tools)
+        workflow.add_node("execute_tools", self._execute_tools)
 
         # サブタスク回答作成ノードを追加
-        workflow.add_node("create_subtask_answer", self.create_subtask_answer)
+        workflow.add_node("create_subtask_answer", self._create_subtask_answer)
 
         # サブタスク内省ノードを追加
-        workflow.add_node("reflect_subtask", self.reflect_subtask)
+        workflow.add_node("reflect_subtask", self._reflect_subtask)
 
         # ツール選択からスタート
         workflow.add_edge(START, "select_tools")
