@@ -85,7 +85,8 @@ class Agent:
         self.max_challenge_count = max_challenge_count
 
     def create_plan(self, state: AgentState) -> dict:
-        """計画を作成する
+        """
+        1. 計画作成｜質問分解とサブタスクリスト作成
 
         Args:
             state (AgentState): 入力の状態
@@ -132,7 +133,8 @@ class Agent:
         return {"plan": plan.subtasks}
 
     def select_tools(self, state: AgentSubGraphState) -> dict:
-        """ツールを選択する
+        """
+        2.1 ツール選択｜LLMが適切なツールを判断・選択
 
         Args:
             state (AgentSubGraphState): 入力の状態
@@ -220,6 +222,16 @@ class Agent:
         return {"messages": messages}
 
     def execute_tools(self, state: AgentSubGraphState) -> dict:
+        """
+        2.2 ツール実行｜選択したツールを実行
+
+        Args:
+            state (AgentSubGraphState): _description_
+
+        Returns:
+            dict: _description_
+        """
+
         logger.info("🚀 Starting tool execution process...")
         messages = state["messages"]
 
@@ -260,7 +272,8 @@ class Agent:
         return {"messages": messages, "tool_results": [tool_results]}
 
     def create_subtask_answer(self, state: AgentSubGraphState) -> dict:
-        """サブタスク回答を作成する
+        """
+        2.3 回答生成｜ツール実行結果から回答を作成
 
         Args:
             state (AgentSubGraphState): 入力の状態
@@ -304,7 +317,8 @@ class Agent:
         }
 
     def reflect_subtask(self, state: AgentSubGraphState) -> dict:
-        """サブタスク回答を内省する
+        """
+        2.4 自己修正｜回答の適切性評価と原因分析→再試行指示
 
         Args:
             state (AgentSubGraphState): 入力の状態
@@ -365,7 +379,8 @@ class Agent:
         return update_state
 
     def create_answer(self, state: AgentState) -> dict:
-        """最終回答を作成する
+        """
+        3. 最終回答作成｜全サブタスク回答を統合
 
         Args:
             state (AgentState): 入力の状態
