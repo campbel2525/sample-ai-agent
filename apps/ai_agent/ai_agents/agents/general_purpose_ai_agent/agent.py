@@ -40,6 +40,12 @@ logger = setup_logger(__file__)
 
 
 class AgentSubGraphState(TypedDict):
+    """サブグラフ（単一サブタスク実行）で用いる状態。
+
+    各サブタスクについて、ツール選択→実行→回答生成→内省の
+    一連の処理で受け渡すデータを保持します。
+    """
+
     query: str
     plan: list[str]
     subtask: str
@@ -52,6 +58,12 @@ class AgentSubGraphState(TypedDict):
 
 
 class AgentState(TypedDict):
+    """メイングラフ（全体実行）で用いる状態。
+
+    計画作成、各サブタスクの集約、最終回答作成のための
+    入力・中間結果・最終結果を保持します。
+    """
+
     query: str
     chat_history: list[ChatCompletionMessageParam]
     plan: list[str]
@@ -61,6 +73,14 @@ class AgentState(TypedDict):
 
 
 class Agent:
+    """汎用RAGエージェント。
+
+    - 計画作成（質問分解）
+    - サブタスク実行（ツール選択/実行→回答→内省の繰り返し）
+    - 最終回答作成（全サブタスク結果の統合）
+
+    をLangGraphで構成して実行します。
+    """
 
     def __init__(
         self,
@@ -70,6 +90,15 @@ class Agent:
         tools: list[BaseTool] = [],
         max_challenge_count: int = 3,
     ) -> None:
+        """エージェントを初期化する。
+
+        Args:
+            openai_base_url (str): OpenAI互換エンドポイントのベースURL。
+            openai_api_key (str): OpenAI APIキー。
+            settings (AgentSettings | None): 各フェーズのモデル/プロンプト設定。未指定時は既定値。
+            tools (list[BaseTool]): 利用可能なツール一覧（LangChain Tool）。
+            max_challenge_count (int): 内省に基づくリトライの最大回数。
+        """
         self.openai_base_url = openai_base_url
         self.openai_api_key = openai_api_key
         self.settings = settings or AgentSettings()
@@ -85,8 +114,7 @@ class Agent:
         self.max_challenge_count = max_challenge_count
 
     def create_plan(self, state: AgentState) -> dict:
-        """
-        1. 計画作成｜質問分解とサブタスクリスト作成
+        """1. 計画作成｜質問分解とサブタスクリスト作成
 
         Args:
             state (AgentState): 入力の状態
@@ -133,8 +161,7 @@ class Agent:
         return {"plan": plan.subtasks}
 
     def select_tools(self, state: AgentSubGraphState) -> dict:
-        """
-        2.1 ツール選択｜LLMが適切なツールを判断・選択
+        """2.1 ツール選択｜LLMが適切なツールを判断・選択
 
         Args:
             state (AgentSubGraphState): 入力の状態
@@ -222,14 +249,19 @@ class Agent:
         return {"messages": messages}
 
     def execute_tools(self, state: AgentSubGraphState) -> dict:
-        """
-        2.2 ツール実行｜選択したツールを実行
+        """2.2 ツール実行｜選択したツールを実行。
+
+        select_tools の結果（直前メッセージ）に含まれる `tool_calls` を順に実行し、
+        各ツールの戻り値を `ToolResult` として蓄積します。ツール呼び出しが無い場合は
+        実行をスキップし、空の結果を返します。
 
         Args:
-            state (AgentSubGraphState): _description_
+            state (AgentSubGraphState): サブタスク実行中の状態（messages を含む）。
 
         Returns:
-            dict: _description_
+            dict: 以下を含む更新済み状態の差分。
+                - `messages`: ツール実行結果（toolロール）を追加したメッセージ列
+                - `tool_results`: 実行したツール結果（List[List[ToolResult]]] 形式）
         """
 
         logger.info("🚀 Starting tool execution process...")
@@ -272,8 +304,7 @@ class Agent:
         return {"messages": messages, "tool_results": [tool_results]}
 
     def create_subtask_answer(self, state: AgentSubGraphState) -> dict:
-        """
-        2.3 回答生成｜ツール実行結果から回答を作成
+        """2.3 回答生成｜ツール実行結果から回答を作成
 
         Args:
             state (AgentSubGraphState): 入力の状態
@@ -317,8 +348,7 @@ class Agent:
         }
 
     def reflect_subtask(self, state: AgentSubGraphState) -> dict:
-        """
-        2.4 自己修正｜回答の適切性評価と原因分析→再試行指示
+        """2.4 自己修正｜回答の適切性評価と原因分析→再試行指示
 
         Args:
             state (AgentSubGraphState): 入力の状態
@@ -379,8 +409,7 @@ class Agent:
         return update_state
 
     def create_answer(self, state: AgentState) -> dict:
-        """
-        3. 最終回答作成｜全サブタスク回答を統合
+        """3. 最終回答作成｜全サブタスク回答を統合
 
         Args:
             state (AgentState): 入力の状態
@@ -425,6 +454,18 @@ class Agent:
         return {"last_answer": response.choices[0].message.content}
 
     def _execute_subgraph(self, state: AgentState):
+        """単一サブタスクのサブグラフを実行する。
+
+        与えられた `current_step` のサブタスクに対して、
+        ツール選択→ツール実行→回答生成→内省（必要に応じてループ）
+        を実行し、`Subtask` 結果を1件返します。
+
+        Args:
+            state (AgentState): メイングラフの状態（query/plan/current_step など）。
+
+        Returns:
+            dict: `subtask_results`（List[Subtask]）を含む差分。
+        """
         subgraph = self._create_subgraph()
 
         result = subgraph.invoke(
@@ -450,6 +491,17 @@ class Agent:
         return {"subtask_results": [subtask_result]}
 
     def _should_continue_exec_subtasks(self, state: AgentState) -> list:
+        """全サブタスクに並列送信するための分岐を生成する。
+
+        与えられた計画 `plan` の各インデックスに対して、
+        `execute_subtasks` へ送る `Send` を生成します。
+
+        Args:
+            state (AgentState): メイングラフの状態（plan を含む）。
+
+        Returns:
+            list: `Send` オブジェクトのリスト。
+        """
         return [
             Send(
                 "execute_subtasks",
@@ -465,6 +517,17 @@ class Agent:
     def _should_continue_exec_subtask_flow(
         self, state: AgentSubGraphState
     ) -> Literal["end", "continue"]:
+        """サブタスク内のループ継続/終了を判定する。
+
+        内省結果の `is_completed` が真、または挑戦回数が
+        `max_challenge_count` に到達した場合は終了、それ以外は継続。
+
+        Args:
+            state (AgentSubGraphState): サブタスク実行中の状態。
+
+        Returns:
+            Literal["end", "continue"]: 継続フラグ。
+        """
         if (
             state["is_completed"]
             or state["challenge_count"] >= self.max_challenge_count
@@ -584,6 +647,17 @@ class Agent:
         response_format: Type[BaseModel],
         **rest: Any,
     ):
+        """構造化出力（parse）でChat Completionsを呼び出すヘルパ。
+
+        Args:
+            model (str): モデル名。
+            messages (Iterable[ChatCompletionMessageParam]): メッセージ列。
+            response_format (Type[BaseModel]): Pydanticモデル型（構造化出力）。
+            **rest: 追加パラメータ（temperature 等）。
+
+        Returns:
+            Any: OpenAIクライアントのレスポンス。
+        """
         return self.client.beta.chat.completions.parse(
             model=model,
             messages=messages,
@@ -598,6 +672,16 @@ class Agent:
         messages: Iterable[ChatCompletionMessageParam],
         **rest: Any,
     ):
+        """通常のChat Completionsを呼び出すヘルパ。
+
+        Args:
+            model (str): モデル名。
+            messages (Iterable[ChatCompletionMessageParam]): メッセージ列。
+            **rest: 追加パラメータ（tools 等）。
+
+        Returns:
+            Any: OpenAIクライアントのレスポンス。
+        """
         return self.client.chat.completions.create(
             model=model,
             messages=messages,
