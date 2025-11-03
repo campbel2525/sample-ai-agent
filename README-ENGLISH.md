@@ -1,13 +1,23 @@
 # Overview
 
-This repository provides the following systems:
+## [Japanese README](https://github.com/campbel2525/sample-ai-agent/blob/main/README.md)
 
-- AI Agent System (`apps/ai_agent`)
-  - AI agent that runs a chatbot
+I built the following systems:
+
+- Chatbot AI Agent System (`apps/ai_agent`)
+
+  - AI agent functionality to run a chatbot
+
+    - A chatbot that searches documents and answers
+    - If the user's question is ambiguous, ask a follow-up question
+    - ~~If document retrieval suggests it would help, ask a follow-up question~~
+    - If the user's question requires information not found in the documents, respond that no answer is available
+
   - Exposed as an API
+
 - Tuning AI System (`apps/tuning_ai_agent`)
   - Functionality to tune the AI agent
-  - Accuracy is still limited and has room for improvement
+  - Accuracy is still limited and there is room for improvement.
 
 ## Architecture
 
@@ -26,11 +36,11 @@ Tune the prompts while calling the API.
 ## Main Features
 
 - Core feature: Chatbot AI agent API
-  - Single-agent
+  - Single agent
   - Plan-and-Execute type
 - Program directory: `apps/ai_agent`
-- Exposed as a FastAPI API
-  - See FastAPI Docs for detailed API specifications: http://localhost:8000/docs
+- Exposed via FastAPI
+  - See the FastAPI Docs for detailed API specifications: http://localhost:8000/docs
   - Request body
     - Prompt(s) required to run the AI agent
     - Information required to run RAGas
@@ -40,28 +50,28 @@ Tune the prompts while calling the API.
     - Execution record of the AI agent
     - Langfuse IDs, etc.
     - RAGas results
-  - For this project the API is treated as a sub-feature, so it is consolidated into a single file (`apps/ai_agent/run_fastapi.py`) without authentication.
+  - In this project the API is positioned as a sub-feature, so the code is consolidated into a single file (`apps/ai_agent/run_fastapi.py`) without authentication.
 - streamlit-ui
-  - UI feature that uses the AI agent API
+  - UI that uses the AI agent API
 - Uses Langfuse, allowing you to view AI agent execution logs in the browser
   - https://langfuse.com/
-  - Only `answer_relevancy` and `answer_similarity` are returned
-- Uses OpenSearch as the search DB to perform hybrid search (full-text + vector search)
+  - Returns only `answer_relevancy` and `answer_similarity`
+- Uses OpenSearch as the search DB to run hybrid search (full-text + vector)
   - Uses [Wikipedia: Keanu Reeves](https://ja.wikipedia.org/wiki/%E3%82%AD%E3%82%A2%E3%83%8C%E3%83%BB%E3%83%AA%E3%83%BC%E3%83%96%E3%82%B9) as sample data
-  - Since the goal here is to check how the AI agent behaves, we insert chunks of 512 characters with 128-character overlap without particular tuning
+  - Since the goal here is to check how the AI agent behaves, chunks of 512 characters with 128-character overlap are inserted without particular tuning
   - File: `project/data/test_data.txt`
 
-## Other
+## Others
 
-The following technical book was used as a reference (highly recommended):
+The following technical book was used as a reference (highly recommended).
 
-- [現場で活用するための AI エージェント実践入門](https://www.amazon.co.jp/%E7%8F%BE%E5%A0%B4%E3%81%A7%E6%B4%BB%E7%94%A8%E3%81%99%E3%82%8B%E3%81%9F%E3%82%81%E3%81%AEAI%E3%82%A8%E3%83%BC%E3%82%B8%E3%82%A7%E3%83%B3%E3%83%88%E5%AE%9F%E8%B7%B5%E5%85%A5%E9%96%80-KS%E6%83%85%E5%A0%B1%E7%A7%91%E5%AD%A6%E5%B0%82%E9%96%80%E6%9B%B8-%E5%A4%AA%E7%94%B0-%E7%9C%9F%E4%BA%BA/dp/4065401402)
+- We referenced [現場で活用するための AI エージェント実践入門](https://www.amazon.co.jp/%E7%8F%BE%E5%A0%B4%E3%81%A7%E6%B4%BB%E7%94%A8%E3%81%99%E3%82%8B%E3%81%9F%E3%82%81%E3%81%AEAI%E3%82%A8%E3%83%BC%E3%82%B8%E3%82%A7%E3%83%B3%E3%83%88%E5%AE%9F%E8%B7%B5%E5%85%A5%E9%96%80-KS%E6%83%85%E5%A0%B1%E7%A7%91%E5%AD%A6%E5%B0%82%E9%96%80%E6%9B%B8-%E5%A4%AA%E7%94%B0-%E7%9C%9F%E4%BA%BA/dp/4065401402) for AI agent development.
 
 # Tuning AI System
 
-This provides functionality for AI to continuously refine the agent’s prompts.
+This provides functionality for the AI to continuously refine the agent’s prompts.
 
-Since the AI agent is exposed as an API, you can call the API, have an LLM adjust the prompts based on the results, and call the API again.
+Because the AI agent is exposed as an API, you can call the API, have an LLM adjust the prompts based on the results, and call the API again.
 
 Accuracy is not very good.
 
@@ -69,7 +79,7 @@ Accuracy is not very good.
 
 - Core feature: Prompt tuning for the AI agent
 - Program directory: `apps/tuning_ai_agent`
-- Predefine the number of iterations and call the AI agent API that many times to tune the prompts
+- Predefine the number of iterations and call the AI agent API that many times to tune the prompts.
 
 # Tech Stack
 
@@ -133,37 +143,54 @@ Specify the following in the request body:
 
 ```json
 {
-  "query": "キアヌ・リーブスの代表作と彼の人柄について教えてください",
+  "query": "Please tell me how to read a file in Python.",
   "chat_history": [
     {
+      "content": "Tell me about Python.",
       "role": "user",
-      "content": "映画マトリックスの主人公は？"
+      "timestamp": "2025-01-17T10:00:00Z"
     },
     {
+      "content": "Python is a general-purpose programming language.",
       "role": "assistant",
-      "content": "キアヌリーブスです"
+      "timestamp": "2025-01-17T10:00:30Z"
     }
   ],
   "planner_model_name": "gpt-4o-2024-08-06",
+  "planner_model_params": {
+    "seed": 0,
+    "temperature": 0
+  },
   "subtask_tool_selection_model_name": "gpt-4o-2024-08-06",
-  "subtask_answer_model_name": "gpt-4o-2024-08-06",
-  "subtask_reflection_model_name": "gpt-4o-2024-08-06",
+  "subtask_tool_selection_model_params": {
+    "seed": 0,
+    "temperature": 0
+  },
+  "subtask_retry_answer_model_params": {
+    "seed": 0,
+    "temperature": 0
+  },
   "final_answer_model_name": "gpt-4o-2024-08-06",
-  "planner_params": null,
-  "subtask_tool_selection_model_params": null,
-  "subtask_answer_model_params": null,
-  "subtask_reflection_model_params": null,
-  "final_answer_model_params": null,
-  "ai_agent_planner_system_prompt": null,
-  "ai_agent_planner_user_prompt": null,
-  "ai_agent_subtask_select_tool_system_prompt": null,
-  "ai_agent_subtask_select_tool_user_prompt": null,
-  "ai_agent_subtask_reflection_user_prompt": null,
-  "ai_agent_subtask_retry_answer_user_prompt": null,
-  "ai_agent_final_answer_system_prompt": null,
-  "ai_agent_final_answer_user_prompt": null,
+  "subtask_reflection_model_params": {
+    "seed": 0,
+    "temperature": 0
+  },
+  "final_answer_model_params": {
+    "seed": 0,
+    "temperature": 0
+  },
+  "planner_system_prompt": "You are an excellent planner. Analyze the user's question and break it down into appropriate subtasks.",
+  "planner_user_prompt": "Question: {query}\n\nCreate the subtasks necessary to answer the above question.",
+  "subtask_tool_selection_system_prompt": "You are a specialist who executes the given subtask. Use the available tools to complete the task.",
+  "subtask_tool_selection_user_prompt": "Subtask: {subtask}\n\nSelect the best tool to execute the above subtask and run it.",
+  "subtask_reflection_user_prompt": "Subtask: {subtask}\nTool execution result: {tool_result}\n\nEvaluate whether the above result meets the subtask requirements.",
+  "subtask_reflection_model_name": "gpt-4o-2024-08-06",
+  "subtask_retry_answer_user_prompt": "The previous attempt was insufficient. Advice: {advice}\n\nRe-run the subtask with an improved approach.",
+  "subtask_retry_answer_model_name": "gpt-4o-2024-08-06",
+  "final_answer_system_prompt": "You are an expert who integrates the results of all subtasks and composes the final answer to the user's question.",
+  "final_answer_user_prompt": "Question: {query}\nSubtask results: {subtask_results}\n\nBased on the above information, produce a comprehensive and easy-to-understand answer to the question.",
   "is_run_ragas": true,
-  "ragas_reference": "キアヌ・リーブスの代表作には『スピード』（1994年）、『マトリックス』シリーズ（1999年〜）、『ジョン・ウィック』シリーズ（2014年〜）があります。彼は「聖人」と呼ばれるほどの人格者として知られ、映画の報酬の大部分を慈善事業に寄付するなど、その優しい人柄でも有名です。特に『マトリックス』の報酬の70％をガン研究に寄付したエピソードは広く知られています。"
+  "ragas_reference": "To read a file in Python, use the open() function, preferably combined with a with statement."
 }
 ```
 
@@ -185,7 +212,7 @@ Change the prompts while running the AI agent API and tune them based on the res
 
 ## Steps
 
-1. Prepare multiple query-and-answer pairs. Save file name: `data/test_data/test_data.yml`
+1. Prepare multiple question–answer pairs. Save file name: `data/test_data/test_data.yml`
 2. Use `data/test_data/initial_prompt.yml` as the initial prompt
 3. Start the AI agent API.
 
@@ -206,15 +233,15 @@ docker compose -f "./docker/local/docker-compose.yml" -p chatbot-ai-agent exec -
 - There is no functionality to modify the agent’s own program; we would like to introduce something.
   - Use Cline?
   - Use Claude Code?
-- It would be good for the AI agent to have memory
-  - If successful results are saved, performance can reportedly improve the more it is used
+- The AI agent would benefit from memory functionality
+  - If successful outcomes are saved, performance can reportedly improve the more it is used
 - It may be good to change the mechanism of the AI agent itself
-  - Although it is a chatbot assuming a conversational form, performing Deep Research over a set of prepared files might also be good
+  - While this assumes a conversational chatbot, it might also be good to perform deep research over a set of self-prepared files
 - Consider comparing LLM models
-  - Especially for planning LLMs, would like to use GPT-5 or a reasoning mode
+  - Especially for planning, we would like to use GPT-5 or a “reasoning mode”
 - The Tuning AI has poor accuracy and should be improved
   - We are not actually using it for prompt tuning at the moment
-    - Currently development is proceeding using Codex
+    - Currently, development is proceeding using Codex
   - The prompts executed by the Tuning AI are not good
     - The prompt does not include information about what kind of AI agent it is
     - It would be good to make this injectable from outside
@@ -236,48 +263,71 @@ docker compose -f "./docker/local/docker-compose.yml" -p chatbot-ai-agent exec -
   - https://github.com/WorksApplications/elasticsearch-sudachi/
   - http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/
 
-# Validation
+# Chatbot Validation
 
 ## What We Verified
 
 The AI agent aims to:
 
-- Act as a chatbot that searches OpenSearch and responds
-- Ask “follow-up querys” when the user’s query is ambiguous
-- Respond that there is “no answer” when the user’s query is not present in OpenSearch
+- Act as a chatbot that searches documents and responds
+- Ask follow-up questions when the user’s query is ambiguous
+- Respond that there is “no answer” when the user’s question is not present in the documents
+- ~~Ask a follow-up question when document retrieval suggests it would help~~
 
 OpenSearch contains information about “Keanu Reeves”.
 
-We check that it does not answer beyond the information about Keanu Reeves.
+We verify that it does not answer outside the scope of information about Keanu Reeves.
 
 ## Results
 
 ### Case 1
 
-Since the query was about “the early life of Keanu Reeves,” we confirmed it could answer in a single interaction.
+We confirmed it could answer in a single interaction because the first input already allowed an answer.
 
 #### Conversation with the chatbot
 
-User: I’d like to know about Keanu Reeves’s early life.
+User: Tell me about Keanu’s early life.
 
-Chatbot: Keanu Reeves was born on September 2, 1964 in Lebanon and grew up in Toronto, Canada. His father was an American geologist from Hawaii, and his mother was an English former dancer and designer. In his childhood he moved around the world with his mother’s remarried partners and grew up mainly in Toronto. He attended four high schools over five years, but ultimately did not graduate from high school.
+Chatbot: Keanu Reeves was born on September 2, 1964 in Lebanon and grew up in Toronto, Canada. His father is an American geologist from Hawaii, and his mother is an English former dancer and designer. He grew up around Chinese art and Chinese cuisine. He attended four high schools over five years and, due to dyslexia, struggled academically, but he excelled at ice hockey. He developed a strong interest in theater and, at age 9, appeared on stage in the play “Damn Yankees.” In 1989, the comedy “Bill & Ted’s Excellent Adventure,” in which he starred, became a hit and laid the foundation for his career.
 
 ### Case 2
 
-Because the first query was ambiguous, the chatbot asked a follow-up query.
-
-Afterward the user provided details, but because it was not in the materials, we confirmed it responded that it could not answer.
+We confirmed that because the first input was ambiguous, it asked a follow-up question, and then answered based on the subsequent user input. We also confirmed it referenced previous conversation history.
 
 #### Conversation with the chatbot
 
-User: I want to know about Japan.
+User: About Keanu.
 
-Chatbot: What specific information about Japan would you like to know?
+Chatbot: What specific information about Keanu Reeves are you looking for? His background, major works, recent activities, etc.? If you have a specific topic, please let me know.
 
-User: I’d like to know about the history of the Sengoku period.
+User: Please tell me his age.
 
-Chatbot: I cannot answer. This cannot be confirmed within the provided materials.
+Chatbot: Keanu Reeves was born on September 2, 1964, so he is 59 years old as of 2023.
+
+### Case 3
+
+We confirmed that because the first input was ambiguous, it asked a follow-up question and then responded that it could not answer based on the subsequent user input.
+
+#### Conversation with the chatbot
+
+User: About Japan.
+
+Chatbot: What specific information about Japan would you like to know? For example, geography, history, economy, politics, society and culture, etc. If you can specify an area, I will look it up.
+
+User: Please summarize the Sengoku period.
+
+Chatbot: I cannot answer. This cannot be confirmed within the provided documents.
 
 ## Discussion
 
-We confirmed that the behavior is generally correct.
+We confirmed that the behavior is largely correct.
+
+- Act as a chatbot that searches documents and responds
+- Ask follow-up questions when the user’s query is ambiguous
+- Respond that there is “no answer” when the user’s question is not present in the documents
+- ~~Ask a follow-up question when document retrieval suggests it would help~~
+
+It was difficult to judge when to ask a follow-up question.
+
+As an improvement, like in Case 3, it would be better to return “cannot answer” earlier without probing too deeply. This is quite difficult because there is often a possibility that asking probing questions would make an answer possible.
+
