@@ -108,6 +108,10 @@ Accuracy is not very good.
 make init
 ```
 
+Data will be inserted into OpenSearch:
+
+- Content about Keanu Reeves (text in `data/insert_data/test_data.txt`) is chunked into 512 characters with 128-character overlap and inserted into an OpenSearch index.
+
 3. Verify operation
 
 Open the following URLs in your browser and confirm the screens display:
@@ -121,15 +125,7 @@ Open the following URLs in your browser and confirm the screens display:
 - OpenSearch console
   - http://localhost:5601/
 
-3. Set up data in OpenSearch
-
-```
-make opensearch-setup
-```
-
-The content about Keanu Reeves (the text in `data/insert_data/test_data.txt`) is chunked into 512 characters with 128-character overlap and inserted into an OpenSearch index.
-
-4. Start the AI Agent API
+5. Start the AI Agent API
 
 ```
 make ai-agent-run
@@ -238,6 +234,199 @@ docker compose -f "./docker/local/docker-compose.yml" -p chatbot-ai-agent exec -
 - It may be good to change the mechanism of the AI agent itself
   - While this assumes a conversational chatbot, it might also be good to perform deep research over a set of self-prepared files
 - Consider comparing LLM models
+  - Especially for planning, we may want to try models like GPT‑5 or “reasoning” modes
+- Improve the Tuning AI as accuracy is currently poor
+  - Not actually used for prompt tuning yet
+    - Currently development is progressing using Codex
+  - The prompts run by the Tuning AI are not good
+    - The prompt lacks information about what kind of AI agent it is
+    - It would be better to allow injecting this information externally
+  - Create a dedicated tests folder and pass it as an argument when running the command?
+
+# References
+
+- [現場で活用するための AI エージェント実践入門](https://www.amazon.co.jp/%E7%8F%BE%E5%A0%B4%E3%81%A7%E6%B4%BB%E7%94%A8%E3%81%99%E3%82%8B%E3%81%9F%E3%82%81%E3%81%AEAI%E3%82%A8%E3%83%BC%E3%82%B8%E3%82%A7%E3%83%B3%E3%83%88%E5%AE%9F%E8%B7%B5%E5%85%A5%E9%96%80-KS%E6%83%85%E5%A0%B1%E7%A7%91%E5%AD%A6%E5%B0%82%E9%96%80%E6%9B%B8-%E5%A4%AA%E7%94%B0-%E7%9C%9F%E4%BA%BA/dp/4065401402)
+- OpenAI model list
+  - https://platform.openai.com/docs/models
+- OpenSearch Docker configuration files
+  - https://github.com/codelibs/docker-opensearch
+- Langfuse
+  - Group multiple traces with sessions
+    - https://langfuse.com/docs/observability/features/sessions?utm_source=chatgpt.com
+  - One agent, one trace
+    - https://langfuse.com/integrations/model-providers/openai-py?utm_source=chatgpt.com
+- sudachi
+  - https://github.com/WorksApplications/elasticsearch-sudachi/
+  - http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/
+
+# Chatbot Verification
+
+## What We Verified
+
+The AI agent aims to:
+
+- A chatbot that searches documents and answers
+- If the user's question is ambiguous, ask a follow-up question
+- If the user's question requires information not found in the documents, respond that no answer is available
+- ~~If document retrieval suggests it would help, ask a follow-up question~~
+
+OpenSearch contains information about "Keanu Reeves".
+
+We verify that it does not answer questions outside that scope.
+
+```
+Model used: gpt-4o-2024-08-06
+Parameters: {"temperature": 0, "seed": 0}
+```
+
+## Results
+
+### Case 1
+
+Since the first input already allowed an answer, we confirmed it can answer in a single turn.
+
+#### Chat Transcript
+
+User: Please tell me about Keanu Reeves' background.
+
+Chatbot:
+
+```
+Here is an overview of Keanu Reeves' background.
+
+Birthplace and date: Keanu Reeves was born on September 2, 1964, in Lebanon.
+
+Family: His father is an American geologist from Hawaii, and his paternal grandmother is of Chinese-Hawaiian descent. His mother is an English former dancer and designer. Keanu has a sister, Kim. He also has a half-sister, Karina Miller, and a half-sister, Emma Rose Reeves.
+
+Childhood environment: His childhood was unstable, moving around the world and living with his mother's successive spouses. After his parents divorced, his mother worked as a costume designer and moved to Australia and New York City. The family later relocated to Toronto, followed by another divorce. Keanu and his sister Kim were raised by their grandparents and a nanny.
+
+Education: He grew up in Toronto and attended four high schools over five years. He struggled academically due to dyslexia but developed a strong interest in theater. He ultimately did not complete high school.
+
+Early career and interests: He became interested in acting at age nine and was drawn to Shakespeare and other plays. He also excelled as an ice hockey goaltender but gave it up due to injury. The 1989 film "Bill & Ted's Excellent Adventure," in which he played a leading role, was a hit and launched his career as an actor. He also played bass in the grunge rock band Dogstar.
+
+These points show that Keanu Reeves has a diverse background and grew up with strong interests in acting and music.
+```
+
+### Case 2
+
+Because the first input was ambiguous, the agent asked a follow-up question, and then answered based on the user's subsequent input. (Due to the knowledge cutoff, the year is treated as 2023.) We also confirmed it referred to prior conversation history.
+
+#### Chat Transcript
+
+User: Keanu
+
+Chatbot: Regarding the name "Keanu," what specifically would you like to know? For example, are you looking for information on Keanu Reeves' background and activities, or something else?
+
+User: Tell me his age.
+
+Chatbot: Keanu Reeves was born on September 2, 1964. Assuming the current year is 2023, his age is 59.
+
+### Case 3
+
+Because the information was not found in the documents, the agent replied that it could not answer.
+
+#### Chat Transcript
+
+User: Please summarize Japan's Sengoku period.
+
+Chatbot: I cannot answer. This is not within the scope of the provided documents.
+
+## Discussion
+
+Overall, the behavior is generally correct:
+
+- A chatbot that searches documents and answers
+- If the user's question is ambiguous, ask a follow-up question
+- If the user's question requires information not found in the documents, respond that no answer is available
+- ~~If document retrieval suggests it would help, ask a follow-up question~~
+
+Determining when to ask a follow-up question was challenging.
+
+As an improvement, as in Case 3, it would be better to return "cannot answer" earlier without digging too deeply. This is tricky because there is often a possibility that asking the user a follow-up could enable an answer.
+
+- OpenSearch Docker configuration
+  - https://github.com/codelibs/docker-opensearch
+- Langfuse
+  - Group multiple traces using sessions
+    - https://langfuse.com/docs/observability/features/sessions?utm_source=chatgpt.com
+  - One trace per agent
+    - https://langfuse.com/integrations/model-providers/openai-py?utm_source=chatgpt.com
+- sudachi
+  - https://github.com/WorksApplications/elasticsearch-sudachi/
+  - http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/
+
+# Chatbot Verification
+
+## What We Verify
+
+The AI agent aims to be:
+
+- A chatbot that searches documents and answers
+- If the user's question is ambiguous, it asks a follow-up question
+- If the user's question requires information not found in the documents, it replies that it cannot answer
+- ~~If document retrieval suggests it would help, it asks a follow-up question~~
+
+OpenSearch contains information about “Keanu Reeves”.
+
+We check that it does not answer questions outside Keanu Reeves.
+
+```
+Model: gpt-4o-2024-08-06
+Parameters: {"temperature": 0, "seed": 0}
+```
+
+## Results
+
+### Case 1
+
+The question can be answered on the first input, so it answered in a single turn.
+
+#### Conversation with the chatbot
+
+User: Tell me about Keanu’s background.
+
+Chatbot: Keanu Reeves was born on September 2, 1964 in Lebanon and raised in Toronto, Canada. His father was an American geologist from Hawaii, and his mother is an English former dancer and designer. Keanu grew up surrounded by Chinese art and Chinese cuisine. He attended four high schools in five years and struggled academically due to dyslexia, but he excelled at ice hockey. He developed a strong interest in theater and took the stage at age nine in the play “Damn Yankees.” The 1989 comedy film “Bill & Ted's Excellent Adventure,” in which he starred, became a hit and helped establish his career.
+
+### Case 2
+
+Because the first input is ambiguous, the chatbot asks a follow-up question, and then answers based on the subsequent user input. It also references conversation history.
+
+#### Conversation with the chatbot
+
+User: About Keanu.
+
+Chatbot: What specific information about Keanu Reeves are you looking for? If you have a particular topic such as his background, notable works, or recent activities, please let me know.
+
+User: Tell me his age.
+
+Chatbot: Keanu Reeves was born on September 2, 1964, so as of 2023 he is 59 years old.
+
+### Case 3
+
+Because the first input is ambiguous, the chatbot asks a follow-up question, and then correctly replies that it cannot answer based on the subsequent input.
+
+#### Conversation with the chatbot
+
+User: About Japan.
+
+Chatbot: What specific information about Japan are you looking for? If you can specify a domain such as geography, history, economy, politics, or society and culture, I will look into that.
+
+User: Summarize the Sengoku period.
+
+Chatbot: I cannot answer. It is outside the scope of the provided documents.
+
+## Discussion
+
+We confirmed the behavior is generally correct.
+
+- A chatbot that searches documents and answers
+- If the user's question is ambiguous, it asks a follow-up question
+- If the user's question requires information not found in the documents, it replies that it cannot answer
+- ~~If document retrieval suggests it would help, it asks a follow-up question~~
+
+Determining when to ask follow-up questions is difficult.
+
+As an improvement, like in “Case 3,” it would be nice to return “cannot answer” earlier without digging too deeply. This is tricky because there is often a possibility that asking the user a clarifying question would enable an answer.
   - Especially for planning, we would like to use GPT-5 or a “reasoning mode”
 - The Tuning AI has poor accuracy and should be improved
   - We are not actually using it for prompt tuning at the moment
@@ -330,4 +519,3 @@ We confirmed that the behavior is largely correct.
 It was difficult to judge when to ask a follow-up question.
 
 As an improvement, like in Case 3, it would be better to return “cannot answer” earlier without probing too deeply. This is quite difficult because there is often a possibility that asking probing questions would make an answer possible.
-
