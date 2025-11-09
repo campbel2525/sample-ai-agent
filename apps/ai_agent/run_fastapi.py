@@ -27,7 +27,7 @@ from ai_agents.agents.general_purpose_ai_agent.settings import (
 )
 from ai_agents.tools.hybrid_search_tool import HybridSearchTool
 from config.settings import Settings
-from services.langfuse_service import run_agent_with_langfuse
+from services.langfuse_service import run_ai_agent_with_langfuse
 from services.ragas_service import run_ragas
 
 settings = Settings()
@@ -549,7 +549,7 @@ async def exec_chatbot_ai_agent(
             tools=ai_agent_tools,
             max_challenge_count=3,
         )
-        agent_result: AgentResult = run_agent_with_langfuse(
+        agent_result: AgentResult = run_ai_agent_with_langfuse(
             agent=agent,
             query=request.query,
             chat_history=request.chat_history,

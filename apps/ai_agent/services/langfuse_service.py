@@ -76,7 +76,7 @@ class LangfuseTracer:
         return self.langfuse
 
 
-def run_agent_with_langfuse(
+def run_ai_agent_with_langfuse(
     agent: Agent,
     query: str,
     chat_history: list[ChatCompletionMessageParam],
