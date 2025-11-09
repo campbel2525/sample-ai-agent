@@ -36,7 +36,7 @@ app = FastAPI(
 )
 
 
-class AIAgentRequest(BaseModel):
+class AIAgentApiRequest(BaseModel):
     """
     AI Agentの実行リクエストモデル
     """
@@ -332,7 +332,7 @@ class RagasResult(BaseModel):
     )
 
 
-class AIAgentResponse(BaseModel):
+class AIAgentApiResponse(BaseModel):
     """
     AI Agentの実行レスポンスモデル
     """
@@ -382,7 +382,7 @@ class AIAgentResponse(BaseModel):
 
 @app.post(
     "/ai_agents/chatbot/exec",
-    response_model=AIAgentResponse,
+    response_model=AIAgentApiResponse,
     responses={
         200: {
             "description": "AI Agentの実行が成功した場合",
@@ -480,8 +480,8 @@ class AIAgentResponse(BaseModel):
     },
 )
 async def exec_chatbot_ai_agent(
-    request: AIAgentRequest,
-) -> AIAgentResponse | JSONResponse:
+    request: AIAgentApiRequest,
+) -> AIAgentApiResponse | JSONResponse:
     """
     AI Agentの実行エンドポイント
     リクエストパラメータに基づいてAIエージェントを実行し、RAGas評価も行います
@@ -616,7 +616,7 @@ def normalize_ragas_scores(raw: Any) -> dict:
 
 
 def get_response(
-    request: AIAgentRequest,
+    request: AIAgentApiRequest,
     agent_result: AgentResult,
     ragas_scores: Optional[EvaluationResult],
     langfuse_session_id: str,
@@ -716,7 +716,7 @@ def get_response(
         scores=ragas_scores_dict,
         input=ragas_input,
     )
-    return AIAgentResponse(
+    return AIAgentApiResponse(
         query=request.query,
         answer=agent_result.answer,
         ai_agent_result=ai_agent_result,

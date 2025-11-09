@@ -16,7 +16,7 @@ from ai_agents.agents.general_purpose_ai_agent.models import (
     AgentSetting,
 )
 from config.settings import Settings
-from services.langfuse.wrapper import run_agent_with_langfuse
+from services.langfuse import run_agent_with_langfuse
 from services.openai_service import get_embedding_client, get_openai_client
 
 settings = Settings()
