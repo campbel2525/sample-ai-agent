@@ -25,8 +25,9 @@ from ai_agents.agents.general_purpose_ai_agent.settings import (
 )
 from ai_agents.tools.hybrid_search_tool import HybridSearchTool
 from config.settings import Settings
-from services.ai_agent_service import run_ai_agent
 from services.ragas_service import run_ragas
+from ai_agents.agents.general_purpose_ai_agent.agent import Agent
+from services.langfuse_service import run_agent_with_langfuse
 
 settings = Settings()
 
@@ -491,7 +492,7 @@ async def exec_chatbot_ai_agent(
     1. 実行時間計測開始とLangfuseセッションID生成
     2. AIエージェントの設定（プランナー、サブタスク、最終回答作成用, LLMの設定）
     3. ツールの準備（HybridSearchTool）
-    4. AIエージェントの実行
+    4. Langfuse経由でAIエージェントを実行
     5. RAGas実行
     6. レスポンスの作成 (実行結果の詳細情報構築(サブタスク詳細、統計情報), RAGasスコアのまとめ)
 
@@ -539,13 +540,23 @@ async def exec_chatbot_ai_agent(
         )
         ai_agent_tools = [hybrid_search_tool]
 
-        # 4. AIエージェントの実行
-        agent_result = run_ai_agent(
+        # 4. Langfuse経由でAIエージェントを実行
+        agent = Agent(
+            openai_base_url=settings.openai_base_url,
+            openai_api_key=settings.openai_api_key,
+            settings=ai_agent_setting,
+            tools=ai_agent_tools,
+            max_challenge_count=3,
+        )
+        agent_result: AgentResult = run_agent_with_langfuse(
+            agent=agent,
             query=request.query,
             chat_history=request.chat_history,
-            ai_agent_setting=ai_agent_setting,
-            ai_agent_tools=ai_agent_tools,
+            langfuse_public_key=settings.langfuse_public_key,
+            langfuse_secret_key=settings.langfuse_secret_key,
+            langfuse_host=settings.langfuse_host,
             langfuse_session_id=langfuse_session_id,
+            langfuse_trace_name="ai_agent_execution",
         )
 
         # 5. RAGas実行
