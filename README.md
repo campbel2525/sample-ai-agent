@@ -185,7 +185,7 @@ AI エージェント API のテストの方法
   "subtask_retry_answer_model_name": "gpt-4o-2024-08-06",
   "final_answer_system_prompt": "あなたは全てのサブタスクの結果を統合し、ユーザーの質問に対する最終的な回答を作成する専門家です。",
   "final_answer_user_prompt": "質問: {query}\nサブタスク結果: {subtask_results}\n\n上記の情報を基に、質問に対する包括的で分かりやすい回答を作成してください。",
-  "is_run_ragas": true,
+  "is_execute_ragas": true,
   "ragas_reference": "Pythonでファイルを読み込むには、open()関数を使用し、with文と組み合わせることが推奨されます。"
 }
 ```

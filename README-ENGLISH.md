@@ -185,7 +185,7 @@ Specify the following in the request body:
   "subtask_retry_answer_model_name": "gpt-4o-2024-08-06",
   "final_answer_system_prompt": "You are an expert who integrates the results of all subtasks and composes the final answer to the user's question.",
   "final_answer_user_prompt": "Question: {query}\nSubtask results: {subtask_results}\n\nBased on the above information, produce a comprehensive and easy-to-understand answer to the question.",
-  "is_run_ragas": true,
+  "is_execute_ragas": true,
   "ragas_reference": "To read a file in Python, use the open() function, preferably combined with a with statement."
 }
 ```
@@ -427,7 +427,8 @@ We confirmed the behavior is generally correct.
 Determining when to ask follow-up questions is difficult.
 
 As an improvement, like in “Case 3,” it would be nice to return “cannot answer” earlier without digging too deeply. This is tricky because there is often a possibility that asking the user a clarifying question would enable an answer.
-  - Especially for planning, we would like to use GPT-5 or a “reasoning mode”
+
+- Especially for planning, we would like to use GPT-5 or a “reasoning mode”
 - The Tuning AI has poor accuracy and should be improved
   - We are not actually using it for prompt tuning at the moment
     - Currently, development is proceeding using Codex

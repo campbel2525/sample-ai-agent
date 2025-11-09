@@ -139,9 +139,11 @@ def main():
         st.caption("詳しくは http://localhost:8000/docs 参照")
 
         st.subheader("RAGAS")
-        is_run_ragas = st.checkbox("RAGASを実行する", value=DEFAULT_RUN_RAGAS)
+        is_execute_ragas = st.checkbox("RAGASを実行する", value=DEFAULT_RUN_RAGAS)
         ragas_dataset_raw = st.text_area(
-            "RAGAS dataset (JSON)", value="", help='例: {"reference": "期待する正解テキスト"}'
+            "RAGAS dataset (JSON)",
+            value="",
+            help='例: {"reference": "期待する正解テキスト"}',
         )
         ragas_metrics = st.multiselect(
             "RAGAS metrics",
@@ -331,12 +333,14 @@ def main():
         # RAGAS dataset の解析
         ragas_dataset = parse_json_or_none("RAGAS dataset", ragas_dataset_raw)
         # チェックが入っているのに dataset.reference が無ければ警告
-        if is_run_ragas:
+        if is_execute_ragas:
             ref_val = None
             if isinstance(ragas_dataset, dict):
                 ref_val = ragas_dataset.get("reference")
             if not ref_val:
-                st.warning("RAGASを実行するには 'RAGAS dataset' の JSON に reference が必要です。")
+                st.warning(
+                    "RAGASを実行するには 'RAGAS dataset' の JSON に reference が必要です。"
+                )
                 return
 
         # 送信可となった段階でユーザー発話を履歴に追加し、履歴を作成
@@ -356,7 +360,9 @@ def main():
                     continue
                 if isinstance(v, dict):
                     v = drop_none(v)
-                    if not v:  # 空の辞書は送らない（Pydanticの必須項目バリデーション回避）
+                    if (
+                        not v
+                    ):  # 空の辞書は送らない（Pydanticの必須項目バリデーション回避）
                         continue
                 cleaned[k] = v
             return cleaned
@@ -427,7 +433,7 @@ def main():
         # ragas_setting（入れ子）
         ragas_setting = (
             {"dataset": ragas_dataset, "metrics": ragas_metrics}
-            if is_run_ragas
+            if is_execute_ragas
             else None
         )
 
@@ -436,7 +442,7 @@ def main():
                 "query": user_input,
                 "chat_history": chat_history,
                 "ai_agent_setting": ai_agent_setting,
-                "is_run_ragas": is_run_ragas,
+                "is_execute_ragas": is_execute_ragas,
                 "ragas_setting": ragas_setting,
             }
         )

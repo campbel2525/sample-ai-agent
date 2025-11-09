@@ -144,7 +144,7 @@ class AIAgentRequest(BaseModel):
     )
 
     # RAGas評価制御パラメータ
-    is_run_ragas: bool = Field(
+    is_execute_ragas: bool = Field(
         default=False,
         description="RAGas評価を実行するかどうか",
         examples=[False],
@@ -155,7 +155,7 @@ class AIAgentRequest(BaseModel):
     @model_validator(mode="after")
     def validate_ragas_fields(self):
         """RAGas関連フィールドのバリデーション"""
-        if self.is_run_ragas:
+        if self.is_execute_ragas:
             # ragas_setting.dataset.reference が必須
             ragas_ref = None
             if self.ragas_setting and isinstance(self.ragas_setting, dict):
@@ -164,7 +164,7 @@ class AIAgentRequest(BaseModel):
                     ragas_ref = dataset.get("reference")
             if not ragas_ref:
                 raise ValueError(
-                    "is_run_ragas=Trueの時、ragas_setting.dataset.reference は必須です"
+                    "is_execute_ragas=Trueの時、ragas_setting.dataset.reference は必須です"
                 )
         return self
 
@@ -457,10 +457,10 @@ class AIAgentResponse(BaseModel):
                             {
                                 "type": "value_error",
                                 "loc": ["body"],
-                                "msg": "Value error, is_run_ragas=Trueの時、ragas_referenceは必須です",  # noqa: E501
+                                "msg": "Value error, is_execute_ragas=Trueの時、ragas_referenceは必須です",  # noqa: E501
                                 "input": {
                                     "query": "テスト質問",
-                                    "is_run_ragas": True,
+                                    "is_execute_ragas": True,
                                     "ragas_reference": None,
                                 },
                             },
@@ -552,7 +552,7 @@ async def exec_chatbot_ai_agent(
         ragas_setting = request.ragas_setting
         ragas_dataset_data = ragas_setting["dataset"] if ragas_setting else None
         ragas_metrics_data = ragas_setting["metrics"] if ragas_setting else None
-        if request.is_run_ragas:
+        if request.is_execute_ragas:
             ragas_scores = run_ragas(
                 query=request.query,
                 agent_result=agent_result,
@@ -649,7 +649,7 @@ def get_response(
 
     # レスポンスの作成 RAGasスコアの辞書形式変換
     ragas_scores_dict = {}
-    if request.is_run_ragas and ragas_scores is not None:
+    if request.is_execute_ragas and ragas_scores is not None:
         ragas_scores_dict = normalize_ragas_scores(ragas_scores)
 
     # レスポンスの作成 レスポンスモデルの構築と返却

@@ -42,7 +42,7 @@ def run_ai_agent(
         フェーズ別のプロンプトとモデル設定。
     query : str
         ユーザー入力
-    is_run_ragas : bool, default True
+    is_execute_ragas : bool, default True
         True の場合はエージェント実行後に RAGAS 評価を実施。
         False の場合はエージェント実行結果のみ返す。
     # ragas_retrieved_contexts : Optional[Sequence[str]]
@@ -58,7 +58,7 @@ def run_ai_agent(
     戻り値
     ------
     Union[AgentResult, Tuple[AgentResult, EvaluationResult]]
-        is_run_ragas=False の場合は AgentResult を返し、
+        is_execute_ragas=False の場合は AgentResult を返し、
         True の場合は (AgentResult, EvaluationResult) を返す。
     """
     # エージェント定義

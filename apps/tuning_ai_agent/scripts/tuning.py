@@ -53,35 +53,69 @@ def call_ai_agent_api(
     """
     settings = Settings()
 
-    # APIリクエストのペイロード
+    # APIリクエストのペイロード（新仕様）
+    # - プロンプトは ai_agent_setting にフラットキーまたはネスト形式で渡す
+    # - RAGAS は ragas_setting = { dataset: { reference }, metrics: [...] }
+    # 旧キーから新キーへのフォールバック関数（後方互換）
+    def pick(d: Dict[str, str], new_key: str, old_key: str) -> str:
+        v = d.get(new_key)
+        if v is None or v == "":
+            return d.get(old_key, "")
+        return v
+
     payload = {
         "query": query,
-        "ai_agent_planner_system_prompt": current_prompts.get(
-            "ai_agent_planner_system_prompt", ""
-        ),
-        "ai_agent_planner_user_prompt": current_prompts.get(
-            "ai_agent_planner_user_prompt", ""
-        ),
-        "ai_agent_subtask_select_tool_system_prompt": current_prompts.get(
-            "ai_agent_subtask_select_tool_system_prompt", ""
-        ),
-        "ai_agent_subtask_select_tool_user_prompt": current_prompts.get(
-            "ai_agent_subtask_select_tool_user_prompt", ""
-        ),
-        "ai_agent_subtask_reflection_user_prompt": current_prompts.get(
-            "ai_agent_subtask_reflection_user_prompt", ""
-        ),
-        "ai_agent_subtask_retry_answer_user_prompt": current_prompts.get(
-            "ai_agent_subtask_retry_answer_user_prompt", ""
-        ),
-        "ai_agent_final_answer_system_prompt": current_prompts.get(
-            "ai_agent_final_answer_system_prompt", ""
-        ),
-        "ai_agent_final_answer_user_prompt": current_prompts.get(
-            "ai_agent_final_answer_user_prompt", ""
-        ),
-        "is_run_ragas": True,
-        "ragas_reference": ragas_reference,
+        "chat_history": [],
+        "ai_agent_setting": {
+            # planner
+            "planner_system_prompt": pick(
+                current_prompts,
+                "planner_system_prompt",
+                "ai_agent_planner_system_prompt",
+            ),
+            "planner_user_prompt": pick(
+                current_prompts, "planner_user_prompt", "ai_agent_planner_user_prompt"
+            ),
+            # subtask tool selection
+            "subtask_tool_selection_system_prompt": pick(
+                current_prompts,
+                "subtask_tool_selection_system_prompt",
+                "ai_agent_subtask_select_tool_system_prompt",
+            ),
+            "subtask_tool_selection_user_prompt": pick(
+                current_prompts,
+                "subtask_tool_selection_user_prompt",
+                "ai_agent_subtask_select_tool_user_prompt",
+            ),
+            # reflection
+            "subtask_reflection_user_prompt": pick(
+                current_prompts,
+                "subtask_reflection_user_prompt",
+                "ai_agent_subtask_reflection_user_prompt",
+            ),
+            # retry
+            "subtask_retry_answer_user_prompt": pick(
+                current_prompts,
+                "subtask_retry_answer_user_prompt",
+                "ai_agent_subtask_retry_answer_user_prompt",
+            ),
+            # final answer
+            "final_answer_system_prompt": pick(
+                current_prompts,
+                "final_answer_system_prompt",
+                "ai_agent_final_answer_system_prompt",
+            ),
+            "final_answer_user_prompt": pick(
+                current_prompts,
+                "final_answer_user_prompt",
+                "ai_agent_final_answer_user_prompt",
+            ),
+        },
+        "is_execute_ragas": True,
+        "ragas_setting": {
+            "dataset": {"reference": ragas_reference},
+            "metrics": ["answer_relevancy", "answer_similarity"],
+        },
     }
 
     api_url = urljoin(settings.ai_agent_api_url, "ai_agents/chatbot/exec")
@@ -106,20 +140,7 @@ def call_ai_agent_api(
         print(f"API呼び出しエラー: {str(e)}")
         # エラーの場合はダミーデータを返す
         return {
-            "query": query,
-            "answer": f"エラーが発生しました: {str(e)}",
-            "plan": [],
-            "subtasks_detail": [],
-            "total_subtasks": 0,
-            "completed_subtasks": 0,
-            "total_challenge_count": 0,
-            "ragas_scores": {
-                "answer_relevancy": 0.0,
-                "context_precision": 0.0,
-                "context_recall": 0.0,
-            },
-            "langfuse_session_id": "error",
-            "execution_time": 0.0,
+            "error": str(e),
         }
 
 
@@ -156,13 +177,30 @@ def generate_llm_judge_evaluation(api_result: Dict[str, Any]) -> Dict[str, str]:
             answer_evaluation = str(answer_evaluation_result)
 
         # 改善点の生成
+        # 完了サブタスク情報は新APIのネストに合わせて取得
+        ai_agent_result = (
+            api_result.get("ai_agent_result", {})
+            if isinstance(api_result, dict)
+            else {}
+        )
+        completed_subtasks = (
+            ai_agent_result.get("completed_subtasks", 0)
+            if isinstance(ai_agent_result, dict)
+            else 0
+        )
+        total_subtasks = (
+            ai_agent_result.get("total_subtasks", 0)
+            if isinstance(ai_agent_result, dict)
+            else 0
+        )
+
         improvement_prompt = f"""
         以下のAIエージェントの実行結果について改善点を考察してください：
 
         質問: {api_result.get('query', '')}
         回答: {api_result.get('answer', '')}
         実行時間: {api_result.get('execution_time', 0)}秒
-        完了したサブタスク: {api_result.get('completed_subtasks', 0)}/{api_result.get('total_subtasks', 0)}
+        完了したサブタスク: {completed_subtasks}/{total_subtasks}
 
         {IMPROVEMENT_POINT_PROMPT}
         """
@@ -231,6 +269,16 @@ def update_prompts_with_ai(
         {results_summary}
 
         {AI_AGENT_UPDATE_PROMPT}
+
+        注意: 出力YAMLは以下のキー名（新仕様）で構成してください。
+        - planner_system_prompt
+        - planner_user_prompt
+        - subtask_tool_selection_system_prompt
+        - subtask_tool_selection_user_prompt
+        - subtask_reflection_user_prompt
+        - subtask_retry_answer_user_prompt
+        - final_answer_system_prompt
+        - final_answer_user_prompt
 
         改善されたプロンプトをYAML形式で出力してください。
         """
