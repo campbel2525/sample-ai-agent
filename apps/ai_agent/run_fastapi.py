@@ -249,7 +249,7 @@ class PromptData(BaseModel):
     )
 
 
-class AIAgentResult(BaseModel):
+class AIAgentResultResponse(BaseModel):
     """
     AI Agentの実行結果
     """
@@ -297,7 +297,7 @@ class AIAgentResult(BaseModel):
     )
 
 
-class RagasInput(BaseModel):
+class RagasInputResult(BaseModel):
     """
     RAGas評価の入力データ
     """
@@ -312,7 +312,7 @@ class RagasInput(BaseModel):
     )
 
 
-class RagasResult(BaseModel):
+class RagasResultResponse(BaseModel):
     """
     RAGas評価結果
     """
@@ -328,7 +328,7 @@ class RagasResult(BaseModel):
         ],
     )
 
-    input: RagasInput = Field(
+    input: RagasInputResult = Field(
         ...,
         description="RAGas評価の入力データ",
     )
@@ -352,12 +352,12 @@ class AIAgentApiResponse(BaseModel):
         ],  # noqa: E501
     )
 
-    ai_agent_result: AIAgentResult = Field(
+    ai_agent_result: AIAgentResultResponse = Field(
         ...,
         description="AI Agentの実行結果",
     )
 
-    ragas_result: RagasResult = Field(
+    ragas_result: RagasResultResponse = Field(
         ...,
         description="RAGas評価結果",
     )
@@ -708,7 +708,7 @@ def get_response(
             or FINAL_ANSWER_USER_PROMPT  # noqa: E501
         ),
     )
-    ai_agent_result = AIAgentResult(
+    ai_agent_result = AIAgentResultResponse(
         prompt=prompt_data,
         plan=agent_result.plan.subtasks,
         subtasks_detail=subtasks_detail,
@@ -723,8 +723,8 @@ def get_response(
         if isinstance(dataset, dict):
             ragas_ref = dataset.get("reference")
 
-    ragas_input = RagasInput(ragas_reference=ragas_ref)
-    ragas_result = RagasResult(
+    ragas_input = RagasInputResult(ragas_reference=ragas_ref)
+    ragas_result = RagasResultResponse(
         scores=ragas_scores_dict,
         input=ragas_input,
     )
