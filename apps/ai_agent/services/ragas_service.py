@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional, Sequence
+import os
 
 from ragas import evaluate
 from ragas.dataset_schema import (
@@ -11,7 +12,8 @@ from ragas.metrics import answer_relevancy, answer_similarity
 
 from ai_agents.agents.general_purpose_ai_agent.models import AIAgentResult
 from config.settings import Settings
-from services.openai_service import get_embedding_client, get_openai_client
+from services.openai_service import get_embedding_client
+from langchain_anthropic import ChatAnthropic
 
 settings = Settings()
 
@@ -56,12 +58,22 @@ def run_ragas(
         if "answer_similarity" in ragas_metrics_data:
             ragas_metrics.append(answer_similarity)
 
-    openai_client = get_openai_client(
-        settings.openai_base_url,
-        settings.openai_api_key,
-        settings.openai_model,
-    )
+    # LLM（Claude 優先、なければ OpenAI 互換にフォールバック）
+    anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    anthropic_model = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest")
 
+    llm_client = ChatAnthropic(
+        model=anthropic_model,
+        api_key=anthropic_api_key,
+        temperature=0,
+    )
+    # llm_client = get_openai_client(
+    #     settings.openai_base_url,
+    #     settings.openai_api_key,
+    #     settings.openai_model,
+    # )
+
+    # claudeのembeddingを使用するのが難しくいったんOpenAI Embeddingを使用する
     embedding_client = get_embedding_client(
         settings.openai_base_url,
         settings.openai_api_key,
@@ -72,7 +84,7 @@ def run_ragas(
     ragas_scores: EvaluationResult = evaluate(
         dataset=EvaluationDataset.from_list(ragas_dataset),
         metrics=ragas_metrics,
-        llm=LangchainLLMWrapper(openai_client),
+        llm=LangchainLLMWrapper(llm_client),
         embeddings=LangchainEmbeddingsWrapper(embedding_client),
         raise_exceptions=True,
         show_progress=True,

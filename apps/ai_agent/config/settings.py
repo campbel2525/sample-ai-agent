@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     openai_embedding_model: str = "text-embedding-3-large"
     openai_max_retries: int = 3
 
+    # Anthropic
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-sonnet-4-20250514"
+    # anthropic_embedding_model = "voyage-3-large"
+
     # OpenSearch
     opensearch_host: str = ""
     opensearch_port: int = 0

@@ -21,6 +21,7 @@ fastapi = "*"
 uvicorn = "*"
 ragas = "*"
 pillow = "*"
+langchain-anthropic = "*"
 
 [dev-packages]
 flake8 = "*"
