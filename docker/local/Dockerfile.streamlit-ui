@@ -25,6 +25,8 @@ RUN pip install --upgrade pip
 # pipenvのインストール
 RUN pip install --upgrade setuptools pipenv
 
+CMD ["pipenv", "run", "streamlit", "run", "streamlit_app.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
+
 # # ライブラリのインストール
 # COPY Pipfile /project/
 # COPY Pipfile.lock /project/

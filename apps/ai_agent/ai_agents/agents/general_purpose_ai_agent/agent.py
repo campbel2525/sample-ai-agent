@@ -67,7 +67,7 @@ class AgentState(TypedDict):
     plan: list[str]
     current_step: int
     subtask_results: Annotated[Sequence[Subtask], operator.add]
-    last_answer: str
+    answer: str
 
 
 class Agent:
@@ -140,7 +140,7 @@ class Agent:
             query=query,
             plan=Plan(subtasks=result["plan"]),
             subtasks=result["subtask_results"],
-            answer=result["last_answer"],
+            answer=result["answer"],
         )
 
         return agent_result
@@ -533,7 +533,7 @@ class Agent:
 
         logger.info("Final answer creation complete!")
 
-        return {"last_answer": response.choices[0].message.content}
+        return {"answer": response.choices[0].message.content}
 
     def _execute_subgraph(self, state: AgentState):
         """単一サブタスクのサブグラフを実行する。

@@ -45,7 +45,6 @@ check: ## コードのフォーマット
 ai-agent-run:
 	docker compose -f $(pf) -p $(pn) exec -it ai-agent pipenv run uvicorn run_fastapi:app --reload --host 0.0.0.0 --port 8000
 
-
 streamlit-ui-run: ## streamlitを起動（コンテナ内コマンド、--server.portに合わせる）
 	docker compose -f $(pf) -p $(pn) exec -it streamlit-ui pipenv run streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 8501
 

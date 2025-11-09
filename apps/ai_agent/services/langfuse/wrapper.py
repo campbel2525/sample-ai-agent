@@ -13,10 +13,10 @@ logger = setup_logger(__file__)
 def run_agent_with_langfuse(
     agent: Agent,
     query: str,
+    chat_history: list[ChatCompletionMessageParam],
     langfuse_public_key: str,
     langfuse_secret_key: str,
     langfuse_host: str,
-    chat_history: list[ChatCompletionMessageParam] = [],
     langfuse_session_id: Optional[str] = None,
     langfuse_user_id: Optional[int] = None,
     langfuse_trace_name: str = "ai_agent_execution",
@@ -41,108 +41,71 @@ def run_agent_with_langfuse(
         secret_key=langfuse_secret_key,
         host=langfuse_host,
     )
+    if not tracer.is_available():
+        raise Exception(
+            "Langfuse tracer is not available with the provided credentials."
+        )
 
+    langfuse_client = tracer.get_openai_client(
+        api_key=agent.openai_api_key,
+        base_url=agent.openai_base_url,
+    )
     original_client = agent.client
-    if tracer.is_available():
-        try:
-            langfuse_client = tracer.get_openai_client(
-                api_key=agent.openai_api_key,
-                base_url=agent.openai_base_url,
-            )
-            agent.client = langfuse_client
-            logger.info("✅ Temporarily using Langfuse-integrated OpenAI client")
-        except Exception as e:
-            logger.warning(f"Failed to integrate Langfuse with agent: {e}")
-
-    lf = tracer.get_client()
-
-    if lf is not None:
-        with lf.start_as_current_span(name=langfuse_trace_name) as span:
-            try:
-                # AgentSetting の概要（存在すれば）をメタデータに付与
-                settings_meta = None
-                try:
-                    s = getattr(agent, "settings", None)
-                    if s is not None:
-                        settings_meta = {
-                            "planner_model": s.planner.model_name,
-                            "subtask_select_tool_model": (
-                                s.subtask_select_tool.model_name
-                            ),
-                            "subtask_reflection_model": (
-                                s.subtask_reflection.model_name
-                            ),
-                            "subtask_retry_answer_model": (
-                                s.subtask_retry_answer.model_name
-                            ),
-                            "final_answer_model": s.final_answer.model_name,
-                        }
-                except Exception:
-                    settings_meta = None
-
-                span.update_trace(
-                    name=langfuse_trace_name,  # ★ 引数を使用
-                    input={"query": query, "chat_history": chat_history},
-                    metadata={
-                        "agent_type": "general_purpose_ai_agent",
-                        "max_challenge_count": agent.max_challenge_count,
-                        "tools": [tool.name for tool in agent.tools],
-                        "has_chat_history": bool(chat_history),
-                        "chat_history_length": len(chat_history) if chat_history else 0,
-                        "agent_settings": settings_meta,
-                    },
-                    session_id=langfuse_session_id,
-                    user_id=langfuse_user_id,
-                )
-            except Exception as e:
-                logger.warning(f"Failed to update root trace metadata: {e}")
-
-            try:
-                logger.info(
-                    f"🚀 Starting agent execution with Langfuse tracing ({langfuse_trace_name})..."  # noqa: E501
-                )
-                agent_result = agent.run_agent(query, chat_history)
-
-                try:
-                    plan = getattr(agent_result, "plan", None)
-                    output = {
-                        "answer": agent_result.answer,
-                        "plan": plan.subtasks if plan is not None else None,
-                        "subtask_count": len(getattr(agent_result, "subtasks", [])),
-                    }
-                    metadata = {
-                        "execution_status": "success",
-                        "total_subtasks": len(getattr(agent_result, "subtasks", [])),
-                    }
-                    span.update_trace(
-                        output=output,
-                        metadata=metadata,
-                    )
-                except Exception as e:
-                    logger.warning(f"Failed to update trace output: {e}")
-
-                logger.info("✅ Agent execution completed successfully")
-                return agent_result
-
-            except Exception as e:
-                try:
-                    span.update_trace(
-                        output={"error": str(e)},
-                        metadata={"execution_status": "error"},
-                    )
-                except Exception:
-                    pass
-                logger.error(f"Agent execution failed: {e}")
-                raise
-
-            finally:
-                agent.client = original_client
-                tracer.flush()
-
     try:
-        logger.info("🚀 Starting agent execution without Langfuse tracing...")
-        agent_result = agent.run_agent(query, chat_history)
-        logger.info("✅ Agent execution completed successfully")
-        return agent_result
+        agent.client = langfuse_client
+        logger.info("✅ Temporarily using Langfuse-integrated OpenAI client")
+
+        lf = tracer.get_client()
+        with lf.start_as_current_span(name=langfuse_trace_name) as span:
+            # AgentSetting の概要（存在すれば）をメタデータに付与
+            settings_meta = None
+            s = getattr(agent, "settings", None)
+            if s is not None:
+                settings_meta = {
+                    "planner_model": s.planner.model_name,
+                    "subtask_select_tool_model": s.subtask_select_tool.model_name,
+                    "subtask_reflection_model": s.subtask_reflection.model_name,
+                    "subtask_retry_answer_model": s.subtask_retry_answer.model_name,
+                    "final_answer_model": s.final_answer.model_name,
+                }
+
+            span.update_trace(
+                name=langfuse_trace_name,  # ★ 引数を使用
+                input={"query": query, "chat_history": chat_history},
+                metadata={
+                    "agent_type": "general_purpose_ai_agent",
+                    "max_challenge_count": agent.max_challenge_count,
+                    "tools": [tool.name for tool in agent.tools],
+                    "has_chat_history": bool(chat_history),
+                    "chat_history_length": len(chat_history) if chat_history else 0,
+                    "agent_settings": settings_meta,
+                },
+                session_id=langfuse_session_id,
+                user_id=langfuse_user_id,
+            )
+
+            logger.info(
+                f"🚀 Starting agent execution with Langfuse tracing ({langfuse_trace_name})..."  # noqa: E501
+            )
+            agent_result = agent.run_agent(query, chat_history)
+
+            plan = getattr(agent_result, "plan", None)
+            output = {
+                "answer": agent_result.answer,
+                "plan": plan.subtasks if plan is not None else None,
+                "subtask_count": len(getattr(agent_result, "subtasks", [])),
+            }
+            metadata = {
+                "execution_status": "success",
+                "total_subtasks": len(getattr(agent_result, "subtasks", [])),
+            }
+            span.update_trace(
+                output=output,
+                metadata=metadata,
+            )
+
+            logger.info("✅ Agent execution completed successfully")
+            return agent_result
     finally:
         agent.client = original_client
+        tracer.flush()
