@@ -27,8 +27,8 @@ from pydantic import BaseModel
 
 from .custom_logger import setup_logger
 from .models import (
-    AgentResult,
-    AgentSetting,
+    AIAgentResult,
+    AIAgentSetting,
     Plan,
     ReflectionResult,
     Subtask,
@@ -71,7 +71,7 @@ class AgentState(TypedDict):
     answer: str
 
 
-class Agent:
+class AIAgent:
     """汎用RAGエージェント。
 
     - 計画作成（質問分解）
@@ -85,7 +85,7 @@ class Agent:
         self,
         openai_base_url: str,
         openai_api_key: str,
-        settings: AgentSetting | None = None,
+        settings: AIAgentSetting | None = None,
         tools: List[BaseTool] = [],
         max_challenge_count: int = 3,
         # チャット履歴の最大使用件数（Noneで全件）
@@ -96,13 +96,13 @@ class Agent:
         Args:
             openai_base_url (str): OpenAI互換エンドポイントのベースURL。
             openai_api_key (str): OpenAI APIキー。
-            settings (AgentSetting | None): 各フェーズのモデル/プロンプト設定。未指定時は既定値。
+            settings (AIAgentSetting | None): 各フェーズのモデル/プロンプト設定。未指定時は既定値。
             tools (list[BaseTool]): 利用可能なツール一覧（LangChain Tool）。
             max_challenge_count (int): 内省に基づくリトライの最大回数。
         """
         self.openai_base_url = openai_base_url
         self.openai_api_key = openai_api_key
-        self.settings = settings or AgentSetting()
+        self.settings = settings or AIAgentSetting()
         self.tools = tools
         self.tool_map = {tool.name: tool for tool in tools}
 
@@ -117,7 +117,7 @@ class Agent:
 
     def run_agent(
         self, query: str, chat_history: list[ChatCompletionMessageParam] = []
-    ) -> AgentResult:
+    ) -> AIAgentResult:
         """エージェントを実行する
 
         Args:
@@ -125,7 +125,7 @@ class Agent:
             chat_history (list[dict], optional): チャット履歴
 
         Returns:
-            AgentResult: エージェントの実行結果
+            AIAgentResult: エージェントの実行結果
         """
 
         app = self.create_graph()
@@ -137,7 +137,7 @@ class Agent:
             }
         )
 
-        agent_result = AgentResult(
+        agent_result = AIAgentResult(
             query=query,
             plan=Plan(subtasks=result["plan"]),
             subtasks=result["subtask_results"],

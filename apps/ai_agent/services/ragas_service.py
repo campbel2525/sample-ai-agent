@@ -9,7 +9,7 @@ from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.llms import LangchainLLMWrapper
 from ragas.metrics import answer_relevancy, answer_similarity
 
-from ai_agents.agents.general_purpose_ai_agent.models import AgentResult
+from ai_agents.agents.general_purpose_ai_agent.models import AIAgentResult
 from config.settings import Settings
 from services.openai_service import get_embedding_client, get_openai_client
 
@@ -18,7 +18,7 @@ settings = Settings()
 
 def run_ragas(
     query: str,
-    agent_result: AgentResult,
+    agent_result: AIAgentResult,
     ragas_dataset_data: Optional[Dict[str, str]] = None,
     ragas_metrics_data: Optional[Sequence[Any]] = None,
 ) -> EvaluationResult:
@@ -29,7 +29,7 @@ def run_ragas(
     ----------
     query : str
         ユーザー入力
-    agent_result : AgentResult
+    agent_result : AIAgentResult
         AIエージェントの実行結果。
     ragas_dataset_data : Optional[Dict[str, str]]
         RAGAS 用のデータセット情報。

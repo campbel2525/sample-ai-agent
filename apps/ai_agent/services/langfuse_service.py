@@ -6,8 +6,8 @@ from langfuse import Langfuse
 from langfuse.openai import openai as langfuse_openai
 from openai.types.chat import ChatCompletionMessageParam
 
-from ai_agents.agents.general_purpose_ai_agent.agent import Agent
-from ai_agents.agents.general_purpose_ai_agent.models import AgentResult
+from ai_agents.agents.general_purpose_ai_agent.ai_agent import AIAgent
+from ai_agents.agents.general_purpose_ai_agent.models import AIAgentResult
 from config.custom_logger import setup_logger
 
 LANGFUSE_AVAILABLE = True
@@ -77,7 +77,7 @@ class LangfuseTracer:
 
 
 def run_ai_agent_with_langfuse(
-    agent: Agent,
+    agent: AIAgent,
     query: str,
     chat_history: list[ChatCompletionMessageParam],
     langfuse_public_key: str,
@@ -86,7 +86,7 @@ def run_ai_agent_with_langfuse(
     langfuse_session_id: Optional[str] = None,
     langfuse_user_id: Optional[int] = None,
     langfuse_trace_name: str = "ai_agent_execution",
-) -> AgentResult:
+) -> AIAgentResult:
     """
     エージェントをLangfuseトレーシング付きで実行する
     Args:
@@ -100,7 +100,7 @@ def run_ai_agent_with_langfuse(
         trace_name (str): トレース名（デフォルト: "ai_agent_execution"）
 
     Returns:
-        AgentResult: エージェントの実行結果
+        AIAgentResult: エージェントの実行結果
     """
     tracer = LangfuseTracer(
         public_key=langfuse_public_key,
@@ -123,7 +123,7 @@ def run_ai_agent_with_langfuse(
 
         lf = tracer.get_client()
         with lf.start_as_current_span(name=langfuse_trace_name) as span:
-            # AgentSetting の概要（存在すれば）をメタデータに付与
+            # AIAgentSetting の概要（存在すれば）をメタデータに付与
             settings_meta = None
             s = getattr(agent, "settings", None)
             if s is not None:

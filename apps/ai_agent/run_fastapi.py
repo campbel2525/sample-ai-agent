@@ -10,10 +10,10 @@ from openai.types.chat import ChatCompletionMessageParam
 from pydantic import AliasChoices, BaseModel, Field, model_validator
 from ragas.dataset_schema import EvaluationResult
 
-from ai_agents.agents.general_purpose_ai_agent.agent import Agent
+from ai_agents.agents.general_purpose_ai_agent.ai_agent import AIAgent
 from ai_agents.agents.general_purpose_ai_agent.models import (
-    AgentResult,
-    AgentSetting,
+    AIAgentResult,
+    AIAgentSetting,
 )
 from ai_agents.agents.general_purpose_ai_agent.settings import (
     FINAL_ANSWER_SYSTEM_PROMPT,
@@ -69,14 +69,14 @@ class AIAgentApiRequest(BaseModel):
         },
     )
 
-    # AgentSetting: 入力をまとめて受け取るためのコンテナ
+    # AIAgentSetting: 入力をまとめて受け取るためのコンテナ
     # （個別フィールドも後方互換のため残します）
 
     ai_agent_setting: Optional[dict[str, Any]] = Field(
         default=None,
         description=(
             "Agentの各種設定（モデル名・パラメータ・プロンプト）をまとめて渡すフィールド。"
-            "AgentSetting のネスト形式（planner等のPhaseSettingsごと）またはフラット形式のキーを受け付けます。"
+            "AIAgentSetting のネスト形式（planner等のPhaseSettingsごと）またはフラット形式のキーを受け付けます。"
         ),
         json_schema_extra={
             "example": {
@@ -122,7 +122,7 @@ class AIAgentApiRequest(BaseModel):
         },
     )
 
-    # AgentSetting は ai_agent_setting（ネスト/フラット辞書）で受け付けます。
+    # AIAgentSetting は ai_agent_setting（ネスト/フラット辞書）で受け付けます。
 
     # RAGas 設定（入れ子）：
     # { dataset: { reference: str }, metrics: List[str] }
@@ -525,10 +525,10 @@ async def exec_chatbot_ai_agent(
             payload = {
                 k: v for k, v in request.ai_agent_setting.items() if v is not None
             }
-            ai_agent_setting = AgentSetting(**payload)
+            ai_agent_setting = AIAgentSetting(**payload)
         else:
             # 未指定時はデフォルト構成で初期化
-            ai_agent_setting = AgentSetting()
+            ai_agent_setting = AIAgentSetting()
 
         # 3. ツールの準備（HybridSearchTool）
         hybrid_search_tool = HybridSearchTool(
@@ -542,14 +542,14 @@ async def exec_chatbot_ai_agent(
         ai_agent_tools: List[BaseTool] = [hybrid_search_tool]
 
         # 4. Langfuse経由でAIエージェントを実行
-        agent = Agent(
+        agent = AIAgent(
             openai_base_url=settings.openai_base_url,
             openai_api_key=settings.openai_api_key,
             settings=ai_agent_setting,
             tools=ai_agent_tools,
             max_challenge_count=3,
         )
-        agent_result: AgentResult = run_ai_agent_with_langfuse(
+        agent_result: AIAgentResult = run_ai_agent_with_langfuse(
             agent=agent,
             query=request.query,
             chat_history=request.chat_history,
@@ -630,7 +630,7 @@ def normalize_ragas_scores(raw: Any) -> dict:
 
 def get_response(
     request: AIAgentApiRequest,
-    agent_result: AgentResult,
+    agent_result: AIAgentResult,
     ragas_scores: Optional[EvaluationResult],
     langfuse_session_id: str,
     execution_time: float,

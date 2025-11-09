@@ -63,7 +63,7 @@ class Subtask(BaseModel):
     challenge_count: int = Field(..., description="サブタスクの挑戦回数")
 
 
-class AgentResult(BaseModel):
+class AIAgentResult(BaseModel):
     query: str = Field(..., description="ユーザーの元の質問")
     plan: Plan = Field(..., description="エージェントの計画")
     subtasks: list[Subtask] = Field(..., description="サブタスクのリスト")
@@ -115,7 +115,7 @@ class PhaseSettings(GenericModel, Generic[TPrompt]):
     )
 
 
-class AgentSetting(BaseModel):
+class AIAgentSetting(BaseModel):
     planner: PhaseSettings[PromptSystemUser]
     subtask_select_tool: PhaseSettings[PromptSystemUser]
     subtask_reflection: PhaseSettings[PromptUserOnly]
