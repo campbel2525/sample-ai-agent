@@ -5,10 +5,12 @@ from typing import Any, List, Optional
 import debugpy
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from langchain.tools import BaseTool
 from openai.types.chat import ChatCompletionMessageParam
 from pydantic import AliasChoices, BaseModel, Field, model_validator
 from ragas.dataset_schema import EvaluationResult
 
+from ai_agents.agents.general_purpose_ai_agent.agent import Agent
 from ai_agents.agents.general_purpose_ai_agent.models import (
     AgentResult,
     AgentSetting,
@@ -25,9 +27,8 @@ from ai_agents.agents.general_purpose_ai_agent.settings import (
 )
 from ai_agents.tools.hybrid_search_tool import HybridSearchTool
 from config.settings import Settings
-from services.ragas_service import run_ragas
-from ai_agents.agents.general_purpose_ai_agent.agent import Agent
 from services.langfuse_service import run_agent_with_langfuse
+from services.ragas_service import run_ragas
 
 settings = Settings()
 
@@ -538,7 +539,7 @@ async def exec_chatbot_ai_agent(
             opensearch_base_url=settings.opensearch_base_url,
             opensearch_index_name=settings.opensearch_default_index_name,
         )
-        ai_agent_tools = [hybrid_search_tool]
+        ai_agent_tools: List[BaseTool] = [hybrid_search_tool]
 
         # 4. Langfuse経由でAIエージェントを実行
         agent = Agent(

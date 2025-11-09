@@ -4,6 +4,7 @@ from typing import (
     Annotated,
     Any,
     Iterable,
+    List,
     Literal,
     Optional,
     Sequence,
@@ -85,7 +86,7 @@ class Agent:
         openai_base_url: str,
         openai_api_key: str,
         settings: AgentSetting | None = None,
-        tools: list[BaseTool] = [],
+        tools: List[BaseTool] = [],
         max_challenge_count: int = 3,
         # チャット履歴の最大使用件数（Noneで全件）
         chat_history_max_turns: Optional[int] = None,
