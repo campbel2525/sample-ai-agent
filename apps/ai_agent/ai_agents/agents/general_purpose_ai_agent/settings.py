@@ -23,7 +23,7 @@ PLANNER_SYSTEM_PROMPT = """
 PLANNER_USER_PROMPT = """
 ユーザー入力: {query}
 この入力に答えるためのサブタスクを作成してください。
-"""
+"""  # noqa E501
 
 # subtask select tool
 SUBTASK_TOOL_SELECTION_MODEL_NAME: str = "gpt-4o-2024-08-06"  # gpt-4o-mini
@@ -41,7 +41,7 @@ SUBTASK_TOOL_SELECTION_SYSTEM_PROMPT = """
 
 3. リフレクション
 ツールの実行結果と回答から、サブタスクに対して正しく回答できているかを評価します。根拠が見つからない・不十分な場合は評価をNGにし、別の検索語や絞り込み拡張など具体的な改善を1つだけ advice に書いてください（重複禁止）。OK の場合はサブタスク回答を終了します。
-"""
+"""  # noqa E501
 SUBTASK_TOOL_SELECTION_USER_PROMPT = """
 ユーザー入力: {query}
 計画: {plan}

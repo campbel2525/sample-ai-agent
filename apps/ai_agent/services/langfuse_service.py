@@ -1,19 +1,14 @@
 """Langfuseトレーシング機能"""
 
-from langfuse import Langfuse
-from langfuse.openai import openai as langfuse_openai
-
-from config.custom_logger import setup_logger
 from typing import Optional
 
+from langfuse import Langfuse
+from langfuse.openai import openai as langfuse_openai
 from openai.types.chat import ChatCompletionMessageParam
 
 from ai_agents.agents.general_purpose_ai_agent.agent import Agent
 from ai_agents.agents.general_purpose_ai_agent.models import AgentResult
 from config.custom_logger import setup_logger
-
-# from services.langfuse.tracer import LangfuseTracer
-
 
 LANGFUSE_AVAILABLE = True
 

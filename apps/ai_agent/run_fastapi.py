@@ -25,7 +25,8 @@ from ai_agents.agents.general_purpose_ai_agent.settings import (
 )
 from ai_agents.tools.hybrid_search_tool import HybridSearchTool
 from config.settings import Settings
-from services.ai_agent_service import run_ai_agent, run_ragas
+from services.ai_agent_service import run_ai_agent
+from services.ragas_service import run_ragas
 
 settings = Settings()
 
