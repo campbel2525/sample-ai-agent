@@ -86,7 +86,7 @@ services:
     ports:
       - "127.0.0.1:8501:8501"
     volumes:
-      - ../../apps/streamlit-ui:/project
+      - ../../apps/streamlit_ui:/project
 
   # ----------------
   # AI Agent Tuning
