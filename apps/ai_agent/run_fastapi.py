@@ -297,7 +297,7 @@ class AIAgentResultResponse(BaseModel):
     )
 
 
-class RagasInputResult(BaseModel):
+class RagasInputResponse(BaseModel):
     """
     RAGas評価の入力データ
     """
@@ -328,7 +328,7 @@ class RagasResultResponse(BaseModel):
         ],
     )
 
-    input: RagasInputResult = Field(
+    input: RagasInputResponse = Field(
         ...,
         description="RAGas評価の入力データ",
     )
@@ -723,7 +723,7 @@ def get_response(
         if isinstance(dataset, dict):
             ragas_ref = dataset.get("reference")
 
-    ragas_input = RagasInputResult(ragas_reference=ragas_ref)
+    ragas_input = RagasInputResponse(ragas_reference=ragas_ref)
     ragas_result = RagasResultResponse(
         scores=ragas_scores_dict,
         input=ragas_input,
